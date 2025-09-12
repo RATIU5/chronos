@@ -2,12 +2,13 @@
 
 set -euo pipefail
 
-CHRONOS_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CHRONOS_PATH="$HOME/.local/share/chronos"
 
 source "${CHRONOS_PATH}/scripts/functions.sh"
 
 run_main_installation() {
   echo "Running main installation script..."
+  echo "$CHRONOS_CONFIRM_EVERY_STEP"
 }
 
 main() {
