@@ -3,8 +3,7 @@ readonly GUM_REPO_OWNER="charmbracelet"
 readonly GUM_REPO_NAME="gum"
 
 get_script_dir() {
-    local script_path="${BASH_SOURCE[1]:-${BASH_SOURCE[0]}}"
-    cd "$(dirname "$script_path")" && pwd
+    echo "${CHRONOS_PATH:-"~/.local/share/chronos"}"
 }
 
 check_dependencies() {
@@ -142,6 +141,7 @@ download_gum_binary() {
     filename=$(basename "$download_url")
     
     tmp_dir=$(mktemp -d)
+    mkdir "$tmp_dir"/gum
     trap "rm -rf '$tmp_dir'" EXIT
     
     gum_binary_path="${tmp_dir}/gum"
