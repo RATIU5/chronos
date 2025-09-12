@@ -2,9 +2,9 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CHRONOS_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-source "${SCRIPT_DIR}/scripts/functions.sh"
+source "${CHRONOS_PATH}/scripts/functions.sh"
 
 run_main_installation() {
 
