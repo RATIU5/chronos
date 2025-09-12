@@ -202,12 +202,6 @@ run_gum() {
 }
 
 init_gum() {
-    if [[ "$(uname -s)" != "Linux" ]]; then
-        echo "Error: This script only supports Linux systems"
-        echo "Detected OS: $(uname -s)"
-        return 1
-    fi
-    
     if [[ -z "${_GUM_BINARY_PATH:-}" ]]; then
         _GUM_BINARY_PATH=$(get_gum_binary) || return 1
     fi
