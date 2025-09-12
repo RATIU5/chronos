@@ -42,7 +42,7 @@ main() {
         exit 1
     fi
 
-    gum_confirm "Do you want to confirm every step of the installation? (Recommended for safety)" && {
+    gum_confirm "Do you want to confirm every step of the installation? (Recommended for safety)" --affirmative "Will proceed with confirmation." --negative "Will not confirm each step." && {
         export CHRONOS_CONFIRM_EVERY_STEP=true
     } || {
         export CHRONOS_CONFIRM_EVERY_STEP=false
