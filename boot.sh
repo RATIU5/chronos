@@ -8,9 +8,9 @@ CHRONOS_REPO="${CHRONOS_REPO:-RATIU5/chronos}"
 
 echo -e "\nCloning Chronos from: https://github.com/${CHRONOS_REPO}.git"
 if [[ -d ~/.local/share/chronos/ ]]; then
-  echo -e "\eDirectory ~/.local/share/chronos/ already exists. Do you want to delete it and re-clone? (y/N)"
-  read -r answer
-  if [[ $answer != "y" ]]; then
+  echo -e "Directory ~/.local/share/chronos/ already exists. Do you want to delete it and re-clone? (y/N)"
+  read -r answer </dev/tty
+  if [[ $answer != "y" && $answer != "Y" ]]; then
     echo "Aborting installation."
     exit 1
   fi
