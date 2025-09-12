@@ -42,14 +42,13 @@ main() {
         exit 1
     fi
 
-    
-    choice=$(gum_choose "Yes" "No" "Exit" --prompt "Do you want to confirm every step of the installation? (Recommended for safety)" --selected "Yes")
+    echo "Do you want to confirm every step of the installation? (Recommended for safety)"
+    choice=$(gum_choose "Yes" "No" "Exit" --selected "Yes")
     case "$choice" in
         "No") export CHRONOS_CONFIRM_EVERY_STEP=false ;;
         "Exit") echo "Exiting installation."; exit 0 ;;
         *) export CHRONOS_CONFIRM_EVERY_STEP=true ;;
     esac
-    echo -e "\e[0;30mDo you want to confirm every step of the installation? (Recommended for safety)\e[0m $choice"
     
     if [[ -z "$CHRONOS_GITHUB_USERNAME" ]]; then
         CHRONOS_GITHUB_USERNAME=$(gum_input --placeholder "GitHub Username" --prompt "What is your GitHub username? ")
