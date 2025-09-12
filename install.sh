@@ -4,6 +4,8 @@ set -euo pipefail
 
 CHRONOS_VERBOSE=${CHRONOS_VERBOSE:-false}
 CHRONOS_PATH="$HOME/.local/share/chronos"
+CHRONOS_GITHUB_USERNAME=${CHRONOS_GITHUB_USERNAME:-""}
+CHRONOS_GITHUB_EMAIL=${CHRONOS_GITHUB_EMAIL:-""}
 
 source "${CHRONOS_PATH}/scripts/functions.sh"
 
@@ -50,11 +52,11 @@ main() {
     esac
     echo "$choice"
     
-    if [[ -n "$CHRONOS_GITHUB_USERNAME" ]]; then
+    if [[ -z "$CHRONOS_GITHUB_USERNAME" ]]; then
         CHRONOS_GITHUB_USERNAME=$(gum_input --placeholder "GitHub Username" --prompt "What is your GitHub username?")
     fi
 
-    if [[ -n "$CHRONOS_GITHUB_EMAIL" ]]; then
+    if [[ -z "$CHRONOS_GITHUB_EMAIL" ]]; then
         CHRONOS_GITHUB_EMAIL=$(gum_input --placeholder "GitHub Email" --prompt "What is your GitHub email?")
     fi
 
