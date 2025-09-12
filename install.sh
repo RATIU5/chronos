@@ -11,7 +11,8 @@ run_main_installation() {
 }
 
 main() {
-    echo "Hey, there! Starting the Chronos installation process..."
+    clear
+    echo "Hey, there! Starting the CHRONOS installation process..."
     
     if ! init_gum; then
         echo "Failed to initialize gum. Installation cannot continue."
@@ -19,10 +20,11 @@ main() {
     fi
     
     echo "Do you want to confirm every step of the installation? (Recommended for safety)"
-    case (gum_choose "Yes" "No" "Exit" --default "Yes") in
-        "No") export CHRONOS_CONFIRM_EVERY_STEP=false; break ;;
+    choice=$(gum_choose "Yes" "No" "Exit" --default "Yes")
+    case "$choice" in
+        "No") export CHRONOS_CONFIRM_EVERY_STEP=false ;;
         "Exit") echo "Exiting installation."; exit 0 ;;
-        *) export CHRONOS_CONFIRM_EVERY_STEP=true; break ;;
+        *) export CHRONOS_CONFIRM_EVERY_STEP=true ;;
     esac
 
     run_main_installation
