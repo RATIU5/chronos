@@ -48,8 +48,10 @@ find_local_gum() {
         echo "$local_gum"
         return 0
     elif [[ -f "$local_gum" ]]; then
+        "$CHRONOS_VERBOSE" == "true" && echo "Found local gum binary at $local_gum, but it's not functional."
         return 1
     else
+        "$CHRONOS_VERBOSE" == "true" && echo "Local gum binary not found at $local_gum."
         return 1
     fi
 }
@@ -63,9 +65,11 @@ find_system_gum() {
             echo "$system_gum"
             return 0
         else
+            "$CHRONOS_VERBOSE" == "true" && echo "Found system gum at $system_gum, but it's not functional."
             return 1
         fi
     else
+        "$CHRONOS_VERBOSE" == "true" && echo "System gum not found in PATH."
         return 1
     fi
 }
@@ -162,8 +166,6 @@ download_gum_binary() {
         echo "Error: Downloaded gum binary is not functional"
         return 1
     fi
-    
-    echo "✓ Downloaded gum binary ready"
     echo "$gum_binary_path"
 }
 
@@ -179,8 +181,7 @@ get_gum_binary() {
         echo "$gum_path"
         return 0
     fi
-    
-    echo "Downloading compatible gum binary..."
+
     if gum_path=$(download_gum_binary); then
         echo "$gum_path"
         return 0
@@ -207,7 +208,7 @@ init_gum() {
         return 1
     fi
     
-    if [[ -z "${_GUM_BINARY_PATH:-}" ]]; then        
+    if [[ -z "${_GUM_BINARY_PATH:-}" ]]; then
         _GUM_BINARY_PATH=$(get_gum_binary) || return 1
     fi
     

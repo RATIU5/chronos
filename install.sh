@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+CHRONOS_VERBOSE=${CHRONOS_VERBOSE:-false}
 CHRONOS_PATH="$HOME/.local/share/chronos"
 
 source "${CHRONOS_PATH}/scripts/functions.sh"
