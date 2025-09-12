@@ -49,13 +49,13 @@ main() {
     }
     
     if [[ -z "$CHRONOS_GITHUB_USERNAME" ]]; then
-        CHRONOS_GITHUB_USERNAME=$(gum_input --placeholder "GitHub Username" --prompt "What is your GitHub username? ")
+        CHRONOS_GITHUB_USERNAME=$(gum_input --placeholder "GitHub Username" --prompt "What is your GitHub username? " --prompt.foreground 15)
         echo -e "\e[1;37mWhat is your GitHub username?\e[0m $CHRONOS_GITHUB_USERNAME"
     fi
 
 
     if [[ -z "$CHRONOS_GITHUB_EMAIL" ]]; then
-        CHRONOS_GITHUB_EMAIL=$(gum_input --placeholder "GitHub Email" --prompt "What is your GitHub email? ")
+        CHRONOS_GITHUB_EMAIL=$(gum_input --placeholder "GitHub Email" --prompt "What is your GitHub email? " --prompt.foreground 15)
         echo -e "\e[1;37mWhat is your GitHub email?\e[0m $CHRONOS_GITHUB_EMAIL"
     fi
 
