@@ -7,7 +7,7 @@ CHRONOS_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${CHRONOS_PATH}/scripts/functions.sh"
 
 run_main_installation() {
-
+  echo "Running main installation script..."
 }
 
 main() {

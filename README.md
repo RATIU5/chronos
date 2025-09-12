@@ -11,7 +11,7 @@
 2. Run the following command to setup your system:
 
     ```bash
-    curl -sSL https://raw.githubusercontent.com/RATIU5/chronos/refs/heads/main/boot.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/RATIU5/chronos/refs/heads/main/boot.sh | bash
     ```
 3. Reboot your system:
 
