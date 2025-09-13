@@ -15,9 +15,10 @@ echo "Select your device: "
 machine=$(gum_choose "Beelink SER8" --limit 1)
 
 local metapkgs=()
+local script_dir=$(get_script_dir)
 case $machine in
 	"Beelink SER8")
-		metapkgs+=(./packages/chronos-beelink-ser8)
+		metapkgs+=("${script_dir}/packages/chronos-beelink-ser8")
 		;;
 	*) echo "Unsupported device selected. Exiting."; exit 1 ;;
 esac
