@@ -23,12 +23,11 @@ depends=(
     'iwd'
     'bluez'
     'bluez-utils'
+    'r8168-dkms'
+    'lib32-vulkan-radeon'
 )
 
-optdepends=(
-    'r8125-dkms: Required for 2.5G Ethernet (AUR)'
-    'lib32-vulkan-radeon: 32-bit Vulkan for gaming'
-)
+optdepends=()
 
 source=()
 
