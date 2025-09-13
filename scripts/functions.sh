@@ -297,13 +297,12 @@ function x() {
 }
 
 function v() {
+	gum_style --foreground="#8be9fd" "[$0]: Next command:"
   gum_style --foreground="#8be9fd" --border="thick" --padding="1" --margin="1" \
-    "[$0]: Next command:" \
-    "" \
     "$*"
   
   execute=true
-  if $ask;then
+  if $CHRONOS_CONFIRM_EVERY_STEP;then
     while true;do
       choice=$(gum_choose --header="Execute this command?" \
         "Yes - Execute now" \
@@ -313,7 +312,6 @@ function v() {
       
       case "$choice" in
         "Yes - Execute now")
-          gum_style --foreground="#8be9fd" "OK, executing..."
           break
           ;;
         "Exit now")
@@ -321,13 +319,11 @@ function v() {
           exit
           ;;
         "Skip this command (NOT recommended)")
-          gum_style --foreground="#8be9fd" "Alright, skipping this one..."
           execute=false
           break
           ;;
         "Yes for all - Don't ask again (NOT recommended)")
-          gum_style --foreground="#8be9fd" "Alright, won't ask again. Executing..."
-          ask=false
+          export CHRONOS_CONFIRM_EVERY_STEP=false
           break
           ;;
         *)
