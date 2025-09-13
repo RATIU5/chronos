@@ -252,3 +252,46 @@ gum_table() {
 gum_write() {
     run_gum write "$@"
 }
+
+function showfun() {
+  echo -e "\e[34m[$0]: The definition of function \"$1\" is as follows:\e[0m"
+  printf "\e[32m"
+  type -a $1
+  printf "\e[97m"
+}
+
+function x() {
+  if "$@";then cmdstatus=0;else cmdstatus=1;fi # 0=normal; 1=failed; 2=failed but ignored
+  while [ $cmdstatus == 1 ] ;do
+    # Display error message using gum style
+    gum_style --foreground="#ff5555" --border="rounded" --padding="1" --margin="1" \
+      "[$0]: Command \"$*\" has failed." \
+      "" \
+      "You may need to resolve the problem manually BEFORE repeating this command." \
+      "" \
+      "[Tip] If a certain package is failing to install, try installing it separately in another terminal."
+    
+    # Present user with choices using gum choose
+    choice=$(gum_choose --header="What would you like to do?" \
+      "Repeat this command (recommended)" \
+      "Exit now" \
+      "Ignore this error and continue")
+    
+    case "$choice" in
+      "Ignore this error and continue")
+        cmdstatus=2
+        ;;
+      "Exit now")
+        break
+        ;;
+      *)
+        if "$@";then cmdstatus=0;else cmdstatus=1;fi
+        ;;
+    esac
+  done
+  case $cmdstatus in
+    0) gum_style --foreground="#8be9fd" "[$0]: Command \"$*\" finished.";;
+    1) gum_style --foreground="#ff5555" "[$0]: Command \"$*\" has failed. Exiting...";exit 1;;
+    2) gum_style --foreground="#ff5555" "[$0]: Command \"$*\" has failed but ignored by user.";;
+  esac
+}

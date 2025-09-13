@@ -2,6 +2,12 @@
 
 clear
 
+if ! command -v pacman &> /dev/null; then
+    echo "Error: pacman command not found. This script is designed for Arch Linux systems only."
+    echo "Please run this script on an Arch Linux distribution."
+    exit 1
+fi
+
 sudo pacman -Syu --noconfirm --needed git
 
 CHRONOS_REPO="${CHRONOS_REPO:-RATIU5/chronos}"

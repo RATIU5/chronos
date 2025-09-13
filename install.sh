@@ -10,57 +10,54 @@ CHRONOS_GITHUB_EMAIL=${CHRONOS_GITHUB_EMAIL:-""}
 source "${CHRONOS_PATH}/scripts/functions.sh"
 
 abort() {
-  echo -e "\e[31mChronos install requires: $1\e[0m"
-  echo
-  gum_confirm "Proceed anyway on your own accord and without assistance?" || exit 1
+	echo -e "\e[31mChronos install requires: $1\e[0m"
+	echo
+	gum_confirm "Proceed anyway on your own accord and without assistance?" || exit 1
 }
 
 run_main_installation() {
-  echo "Running main installation script..."
-  echo "$CHRONOS_CONFIRM_EVERY_STEP"
+	source "${CHRONOS_PATH}/scripts/packages.sh"
 }
 
 main() {
-    clear
+	clear
 
-    detected_os=$(detect_os)
-    if [[ "$detected_os" != "linux" ]]; then
-        echo -e "\e[31mError: This script only supports Linux systems\e[0m"
-        echo "Detected OS: $detected_os"
-        return 1
-    fi
+	detected_os=$(detect_os)
+	if [[ "$detected_os" != "linux" ]]; then
+		echo -e "\e[31mError: This script only supports Linux systems\e[0m"
+		echo "Detected OS: $detected_os"
+		return 1
+	fi
 
-    detected_arch=$(detect_architecture)
-    if [[ "$detected_arch" != "x86_64" ]]; then
-        echo -e "\e[31mError: This script only supports x86_64 architecture\e[0m"
-        echo "Detected architecture: $detected_arch"
-        return 1
-    fi
+	detected_arch=$(detect_architecture)
+	if [[ "$detected_arch" != "x86_64" ]]; then
+		echo -e "\e[31mError: This script only supports x86_64 architecture\e[0m"
+		echo "Detected architecture: $detected_arch"
+		return 1
+	fi
 
-    if ! init_gum; then
-        echo "Failed to initialize gum. Installation cannot continue."
-        exit 1
-    fi
+	if ! init_gum; then
+		echo "Failed to initialize gum. Installation cannot continue."
+		exit 1
+	fi
 
-    gum_confirm "Do you want to confirm every step of the installation? (Recommended for safety)" --affirmative "Yes, confirm each step" --negative "Do not confirm each step" && {
-        export CHRONOS_CONFIRM_EVERY_STEP=true
-    } || {
-        export CHRONOS_CONFIRM_EVERY_STEP=false
-    }
-    
-    if [[ -z "$CHRONOS_GITHUB_USERNAME" ]]; then
-        CHRONOS_GITHUB_USERNAME=$(gum_input --placeholder "GitHub Username" --prompt "What is your GitHub username? " --prompt.bold)
-        echo -e "\e[1;37mWhat is your GitHub username?\e[0m $CHRONOS_GITHUB_USERNAME"
-    fi
+	gum_confirm "Do you want to confirm every step of the installation? (Recommended for safety)" --affirmative "Yes, confirm each step" --negative "Do not confirm each step" && {
+		export CHRONOS_CONFIRM_EVERY_STEP=true
+	} || {
+		export CHRONOS_CONFIRM_EVERY_STEP=false
+	}
 
+	if [[ -z "$CHRONOS_GITHUB_USERNAME" ]]; then
+		CHRONOS_GITHUB_USERNAME=$(gum_input --placeholder "GitHub Username" --prompt "What is your GitHub username? " --prompt.bold)
+		echo -e "\e[1;37mWhat is your GitHub username?\e[0m $CHRONOS_GITHUB_USERNAME"
+	fi
 
-    if [[ -z "$CHRONOS_GITHUB_EMAIL" ]]; then
-        CHRONOS_GITHUB_EMAIL=$(gum_input --placeholder "GitHub Email" --prompt "What is your GitHub email? " --prompt.bold)
-        echo -e "\e[1;37mWhat is your GitHub email?\e[0m $CHRONOS_GITHUB_EMAIL"
-    fi
+	if [[ -z "$CHRONOS_GITHUB_EMAIL" ]]; then
+		CHRONOS_GITHUB_EMAIL=$(gum_input --placeholder "GitHub Email" --prompt "What is your GitHub email? " --prompt.bold)
+		echo -e "\e[1;37mWhat is your GitHub email?\e[0m $CHRONOS_GITHUB_EMAIL"
+	fi
 
-
-    run_main_installation
+	run_main_installation
 }
 
 main

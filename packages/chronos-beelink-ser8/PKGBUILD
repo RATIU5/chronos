@@ -1,0 +1,125 @@
+# Maintainer: RATIU5
+pkgname=chronos-beelink-ser8
+pkgver=0.0.1
+pkgrel=1
+pkgdesc="Essential drivers and optimizations for Beelink SER8"
+arch=('x86_64')
+url="https://github.com/RATIU5/chronos"
+license=(None)
+
+depends=(
+    'amd-ucode'
+    'linux-headers'
+    'dkms' 
+    'base-devel'
+    'mesa'
+    'vulkan-radeon'
+    'alsa-utils'
+    'sof-firmware'
+    'pipewire'
+    'wireplumber'
+    'linux-firmware'
+    'networkmanager'
+    'iwd'
+    'bluez'
+    'bluez-utils'
+)
+
+optdepends=(
+    'r8125-dkms: Required for 2.5G Ethernet (AUR)'
+    'lib32-vulkan-radeon: 32-bit Vulkan for gaming'
+)
+
+source=(
+    'blacklist-r8169.conf'
+    'ser8-sysctl.conf'
+    'ser8-modprobe.conf'
+    'ser8-networkmanager.conf'
+)
+
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+prepare() {
+    cat > "${srcdir}/blacklist-r8169.conf" << 'EOF'
+blacklist r8169
+EOF
+
+    cat > "${srcdir}/ser8-sysctl.conf" << 'EOF'
+vm.swappiness = 10
+vm.vfs_cache_pressure = 50
+vm.page-cluster = 0
+vm.dirty_bytes = 268435456
+vm.dirty_background_bytes = 134217728
+vm.dirty_writeback_centisecs = 1500
+net.core.netdev_max_backlog = 16384
+fs.file-max = 1048576
+kernel.nmi_watchdog = 0
+kernel.printk = 3 3 3 3
+kernel.unprivileged_userns_clone = 1
+kernel.kptr_restrict = 1
+EOF
+
+    cat > "${srcdir}/ser8-modprobe.conf" << 'EOF'
+options snd-hda-intel power_save=0 power_save_controller=N
+options amdgpu si_support=1 cik_support=1 dc=1
+options iwlwifi power_save=0 power_level=0
+blacklist iTCO_wdt
+blacklist sp5100_tco
+EOF
+
+    cat > "${srcdir}/ser8-networkmanager.conf" << 'EOF'
+[device]
+wifi.backend=iwd
+
+[connection]
+ipv6.ip6-privacy=2
+EOF
+}
+
+package() {
+    install -Dm644 "${srcdir}/blacklist-r8169.conf" \
+        "${pkgdir}/etc/modprobe.d/ser8-blacklist.conf"
+    
+    install -Dm644 "${srcdir}/ser8-modprobe.conf" \
+        "${pkgdir}/etc/modprobe.d/ser8-optimizations.conf"
+    
+    install -Dm644 "${srcdir}/ser8-sysctl.conf" \
+        "${pkgdir}/etc/sysctl.d/99-ser8-optimizations.conf"
+    
+    install -Dm644 "${srcdir}/ser8-networkmanager.conf" \
+        "${pkgdir}/etc/NetworkManager/conf.d/ser8.conf"
+    
+    install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
+    cat > "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize" << 'EOF'
+#!/bin/bash
+case $1 in
+    post)
+        for host in /sys/class/scsi_host/host*; do
+            [ -e "$host/link_power_management_policy" ] && \
+                echo max_performance > "$host/link_power_management_policy" 2>/dev/null || true
+        done
+        ;;
+esac
+EOF
+    chmod +x "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize"
+    
+    install -dm755 "${pkgdir}/etc/udev/rules.d"
+    cat > "${pkgdir}/etc/udev/rules.d/99-ser8-io-schedulers.rules" << 'EOF'
+ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/scheduler}="none"
+ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
+ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+ACTION=="add", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="max_performance"
+EOF
+}
+
+post_install() {
+    echo "SER8 drivers and optimizations installed."
+    echo "Next: yay -S r8125-dkms"
+    echo "Add kernel params: amd_pstate=active quiet nowatchdog"
+    echo "Enable: systemctl enable NetworkManager bluetooth"
+    echo "Reboot required."
+}
+
+post_upgrade() {
+    echo "SER8 optimizations updated. Reboot recommended."
+}
