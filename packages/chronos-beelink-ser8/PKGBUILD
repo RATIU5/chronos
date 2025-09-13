@@ -30,14 +30,9 @@ optdepends=(
     'lib32-vulkan-radeon: 32-bit Vulkan for gaming'
 )
 
-source=(
-    'blacklist-r8169.conf'
-    'ser8-sysctl.conf'
-    'ser8-modprobe.conf'
-    'ser8-networkmanager.conf'
-)
+source=()
 
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
+sha256sums=()
 
 prepare() {
     cat > "${srcdir}/blacklist-r8169.conf" << 'EOF'
