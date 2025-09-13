@@ -11,7 +11,7 @@ install-local-pkgbuild() {
 	x popd
 }
 
-machine=$(gum_select "Beelink SER8" --prompt "Select your device:" --limit 1)
+machine=$(gum_choose "Beelink SER8" --prompt "Select your device:" --limit 1)
 
 case $machine in
 	"Beelink SER8")
