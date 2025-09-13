@@ -295,3 +295,50 @@ function x() {
     2) gum_style --foreground="#ff5555" "[$0]: Command \"$*\" has failed but ignored by user.";;
   esac
 }
+
+function v() {
+  gum_style --foreground="#8be9fd" --border="thick" --padding="1" --margin="1" \
+    "[$0]: Next command:" \
+    "" \
+    "$*"
+  
+  execute=true
+  if $ask;then
+    while true;do
+      choice=$(gum_choose --header="Execute this command?" \
+        "Yes - Execute now" \
+        "Exit now" \
+        "Skip this command (NOT recommended)" \
+        "Yes for all - Don't ask again (NOT recommended)")
+      
+      case "$choice" in
+        "Yes - Execute now")
+          gum_style --foreground="#8be9fd" "OK, executing..."
+          break
+          ;;
+        "Exit now")
+          gum_style --foreground="#8be9fd" "Exiting..."
+          exit
+          ;;
+        "Skip this command (NOT recommended)")
+          gum_style --foreground="#8be9fd" "Alright, skipping this one..."
+          execute=false
+          break
+          ;;
+        "Yes for all - Don't ask again (NOT recommended)")
+          gum_style --foreground="#8be9fd" "Alright, won't ask again. Executing..."
+          ask=false
+          break
+          ;;
+        *)
+          gum_style --foreground="#ff5555" "Please select a valid option."
+          ;;
+      esac
+    done
+  fi
+  if $execute;then 
+    x "$@"
+  else
+    gum_style --foreground="#f1fa8c" "[$0]: Skipped \"$*\""
+  fi
+}

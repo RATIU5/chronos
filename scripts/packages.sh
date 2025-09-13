@@ -21,7 +21,7 @@ case $machine in
 		;;
 	*) echo "Unsupported device selected. Exiting."; exit 1 ;;
 esac
-
+echo "$machine"
 
 for i in "${metapkgs[@]}"; do
 	metainstallflags="--needed"
