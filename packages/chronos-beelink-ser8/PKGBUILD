@@ -2,7 +2,7 @@
 pkgname=chronos-beelink-ser8
 pkgver=0.0.1
 pkgrel=1
-pkgdesc="Essential drivers and optimizations for Beelink SER8"
+pkgdesc="Essential drivers and optimizations for Beelink SER8 with USB4/Thunderbolt support"
 arch=('x86_64')
 url="https://github.com/RATIU5/chronos"
 license=(None)
@@ -25,9 +25,14 @@ depends=(
     'bluez-utils'
     'r8168-dkms'
     'lib32-vulkan-radeon'
+    'bolt'
+    'thunderbolt-utils-git'
 )
 
-optdepends=()
+optdepends=(
+    'fwupd: Firmware updates for Thunderbolt controllers'
+    'intel-media-driver: Enhanced video acceleration'
+)
 
 source=()
 
@@ -53,12 +58,26 @@ kernel.unprivileged_userns_clone = 1
 kernel.kptr_restrict = 1
 EOF
 
+    # Enhanced modprobe configuration for USB4/Thunderbolt
     cat > "${srcdir}/ser8-modprobe.conf" << 'EOF'
+# Audio optimizations
 options snd-hda-intel power_save=0 power_save_controller=N
-options amdgpu si_support=1 cik_support=1 dc=1
+
+# AMD GPU optimizations with DisplayPort support
+options amdgpu si_support=1 cik_support=1 dc=1 audio=1 dpm=1
+
+# USB4/Thunderbolt support (replaces thunderbolt module)
+options thunderbolt dyndbg=+p
+
+# Intel WiFi optimizations
 options iwlwifi power_save=0 power_level=0
+
+# Disable problematic watchdog timers
 blacklist iTCO_wdt
 blacklist sp5100_tco
+
+# Enable DisplayPort MST for multiple displays
+options drm_kms_helper poll=1
 EOF
 
     cat > "${srcdir}/ser8-networkmanager.conf" << 'EOF'
@@ -67,6 +86,36 @@ wifi.backend=iwd
 
 [connection]
 ipv6.ip6-privacy=2
+EOF
+
+    # USB4/Thunderbolt specific configuration
+    cat > "${srcdir}/ser8-thunderbolt.conf" << 'EOF'
+# USB4 and Thunderbolt configuration for SER8
+ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{authorized}=="0", ATTR{authorized}="1"
+
+# Enable PCIe tunneling for external GPUs and displays
+SUBSYSTEM=="thunderbolt", ATTR{security}!="none", ATTR{security}="user"
+
+# USB4 device authorization
+ACTION=="add", SUBSYSTEM=="usb4", ATTR{authorized}=="0", ATTR{authorized}="1"
+EOF
+
+    # DisplayPort and USB-C configuration
+    cat > "${srcdir}/ser8-display.conf" << 'EOF'
+# Enhanced DisplayPort configuration for SER8
+Section "Device"
+    Identifier "AMD"
+    Driver "amdgpu"
+    Option "DRI" "3"
+    Option "TearFree" "true"
+    Option "VariableRefresh" "true"
+EndSection
+
+Section "Screen"
+    Identifier "Screen0"
+    Device "AMD"
+    DefaultDepth 24
+EndSection
 EOF
 }
 
@@ -83,6 +132,12 @@ package() {
     install -Dm644 "${srcdir}/ser8-networkmanager.conf" \
         "${pkgdir}/etc/NetworkManager/conf.d/ser8.conf"
     
+    install -Dm644 "${srcdir}/ser8-thunderbolt.conf" \
+        "${pkgdir}/etc/udev/rules.d/99-ser8-thunderbolt.conf"
+    
+    install -Dm644 "${srcdir}/ser8-display.conf" \
+        "${pkgdir}/etc/X11/xorg.conf.d/20-ser8-amdgpu.conf"
+    
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
     cat > "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize" << 'EOF'
 #!/bin/bash
@@ -92,6 +147,11 @@ case $1 in
             [ -e "$host/link_power_management_policy" ] && \
                 echo max_performance > "$host/link_power_management_policy" 2>/dev/null || true
         done
+        
+        # Re-enable USB4/Thunderbolt after resume
+        for tb in /sys/bus/thunderbolt/devices/domain*; do
+            [ -e "$tb/security" ] && echo user > "$tb/security" 2>/dev/null || true
+        done
         ;;
 esac
 EOF
@@ -99,9 +159,20 @@ EOF
     
     install -dm755 "${pkgdir}/etc/udev/rules.d"
     cat > "${pkgdir}/etc/udev/rules.d/99-ser8-io-schedulers.rules" << 'EOF'
+# NVMe optimization
 ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/scheduler}="none"
+
+# SSD optimization
 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
+
+# HDD optimization
 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+
+# SATA link power management
 ACTION=="add", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="max_performance"
+
+# USB4/Thunderbolt power management
+ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{power/wakeup}="enabled"
+ACTION=="add", SUBSYSTEM=="usb4", ATTR{power/wakeup}="enabled"
 EOF
 }

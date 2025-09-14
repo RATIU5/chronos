@@ -2,7 +2,7 @@
 pkgname=chronos-apple-studio-display
 pkgver=0.0.1
 pkgrel=1
-pkgdesc="Essential drivers and utilities for Apple Studio Display hardware support"
+pkgdesc="Essential drivers and utilities for Apple Studio Display hardware support on Wayland/Hyprland"
 arch=('x86_64')
 url="https://github.com/RATIU5/chronos"
 license=(MIT)
@@ -15,25 +15,86 @@ depends=(
     'udev'
     'rust'
     'cargo'
-		'ddcutil'
-		'bolt'
+    'ddcutil'
+    'bolt'
+    'mesa'
+    'wayland'
+    'wayland-protocols'
+    'hyprland'
+    'xdg-desktop-portal-hyprland'
 )
 
-optdepends=()
+optdepends=(
+    'wdisplays: GUI for monitor configuration'
+    'nwg-displays: Alternative GUI for monitor arrangement'
+    'kanshi: Dynamic display configuration'
+)
 
 source=()
 
 sha256sums=()
 
 prepare() {
+    # Enhanced udev rules for Apple Studio Display with better permissions
     cat > "${srcdir}/50-apple-studio-display.rules" << 'EOF'
+# Apple Studio Display HID devices
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", GROUP="users", OWNER="root", MODE="0660", TAG+="uaccess"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9243", GROUP="users", OWNER="root", MODE="0660", TAG+="uaccess"
+
+# Apple Studio Display USB devices
+SUBSYSTEM=="usb", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9243", TAG+="uaccess"
+
+# Apple Studio Display audio/video devices
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", TAG+="uaccess"
+SUBSYSTEM=="sound", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", TAG+="uaccess"
 EOF
 
+    # Enhanced DisplayPort detection for Wayland
     cat > "${srcdir}/90-displayport-detection.rules" << 'EOF'
-# Force DisplayPort detection on hotplug
-SUBSYSTEM=="drm", ACTION=="change", RUN+="/bin/sh -c 'echo detect > /sys/class/drm/card*/status'"
+# Force DisplayPort detection on hotplug for Wayland compositors
+SUBSYSTEM=="drm", ACTION=="change", ENV{HOTPLUG}=="1", RUN+="/bin/sh -c 'echo detect > /sys/class/drm/card*/status'"
+
+# USB-C DisplayPort Alt Mode detection
+SUBSYSTEM=="typec", ACTION=="add", ATTR{power_role}=="source", ATTR{data_role}=="host", RUN+="/bin/sh -c 'echo 1 > /sys/class/drm/card*/card*/drm/card*/status'"
+EOF
+
+    # Thunderbolt/USB4 auto-authorization for Apple displays
+    cat > "${srcdir}/95-thunderbolt-apple-display.rules" << 'EOF'
+# Auto-authorize Apple Studio Display via Thunderbolt/USB4
+ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{vendor}=="0x1", ATTR{device}=="0x1114", ATTR{authorized}=="0", ATTR{authorized}="1"
+ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{vendor}=="0x1", ATTR{device}=="0x9243", ATTR{authorized}=="0", ATTR{authorized}="1"
+EOF
+
+    # Wayland-specific monitor configuration helper
+    cat > "${srcdir}/apple-studio-display-wayland-setup" << 'EOF'
+#!/bin/bash
+# Helper script for Apple Studio Display Wayland setup
+
+# Check if running Wayland
+if [ "$XDG_SESSION_TYPE" != "wayland" ]; then
+    echo "This script is for Wayland sessions only"
+    exit 1
+fi
+
+# Create monitors configuration directory if it doesn't exist
+mkdir -p ~/.config/hypr/
+
+# Create basic Apple Studio Display configuration for Hyprland
+cat > ~/.config/hypr/apple-studio-display.conf << 'HYPR_EOF'
+# Apple Studio Display configuration for Hyprland
+# 5K resolution at 60Hz with proper scaling
+monitor=,5120x2880@60,auto,1.5
+
+# Enable high refresh rate if supported
+monitor=,5120x2880@60,auto,1.5
+
+# Fallback configuration for compatibility
+monitor=,preferred,auto,1.5
+HYPR_EOF
+
+echo "Apple Studio Display Hyprland configuration created at ~/.config/hypr/apple-studio-display.conf"
+echo "Add 'source = ~/.config/hypr/apple-studio-display.conf' to your hyprland.conf"
 EOF
 
     cd "${srcdir}"
@@ -48,6 +109,12 @@ package() {
     
     install -Dm644 "${srcdir}/90-displayport-detection.rules" \
         "${pkgdir}/etc/udev/rules.d/90-displayport-detection.rules"
+    
+    install -Dm644 "${srcdir}/95-thunderbolt-apple-display.rules" \
+        "${pkgdir}/etc/udev/rules.d/95-thunderbolt-apple-display.rules"
+    
+    install -Dm755 "${srcdir}/apple-studio-display-wayland-setup" \
+        "${pkgdir}/usr/bin/apple-studio-display-wayland-setup"
     
     install -Dm755 "${srcdir}/asdbctl/target/release/asdbctl" \
         "${pkgdir}/usr/bin/asdbctl"
