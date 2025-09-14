@@ -152,31 +152,26 @@ package() {
     install -Dm644 "${srcdir}/bolt-studio-display.service" \
         "${pkgdir}/usr/lib/systemd/system/bolt-studio-display.service"
 
-    # Early KMS configuration for stable display throughout boot + encryption
+    # WORKING SOLUTION: nomodeset for encrypted password, then proper driver after
     install -dm755 "${pkgdir}/etc/mkinitcpio.conf.d"
-    cat > "${pkgdir}/etc/mkinitcpio.conf.d/99-early-kms.conf" << 'EOF'
-# Enable early KMS for AMD GPU and Studio Display with encrypted drive support
-MODULES=(amdgpu radeon drm drm_kms_helper)
-HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)
+    cat > "${pkgdir}/etc/mkinitcpio.conf.d/99-studio-display.conf" << 'EOF'
+# Minimal initramfs for LUKS password visibility on Studio Display
+MODULES=()
+HOOKS=(base udev autodetect microcode keyboard keymap block encrypt filesystems fsck)
 EOF
 
-    # Console configuration for encrypted password visibility
-    cat > "${pkgdir}/etc/mkinitcpio.conf.d/98-console.conf" << 'EOF'
-# Console configuration for Studio Display during encryption
-BINARIES=(/usr/bin/setfont)
-FILES=(/usr/share/kbd/consolefonts/ter-132n.psf.gz)
+    # TTY switching helper for encrypted password screen
+    cat > "${srcdir}/studio-display-luks-helper" << 'EOF'
+#!/bin/bash
+# Helper for LUKS password entry on Studio Display
+echo "If you see a black screen during LUKS password:"
+echo "1. Press Alt+Left Arrow, then Alt+Right Arrow to switch TTY"
+echo "2. Or type password blindly and press Enter"
+echo "3. After boot, display will work normally"
 EOF
 
-    # Kernel parameters for stable display with encryption
-    install -dm755 "${pkgdir}/etc/kernel"
-    cat > "${pkgdir}/etc/kernel/cmdline" << 'EOF'
-# AMD GPU parameters for Studio Display stability during encryption
-amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1 amdgpu.dcdebugmask=0x10
-# Console font and framebuffer for encrypted password screen
-console=tty0 consoleblank=0 fbcon=nodefer
-# Force AMD driver early and persistent
-video=DP-1:3840x2160@60 drm.debug=0x04
-EOF
+    install -Dm755 "${srcdir}/studio-display-luks-helper" \
+        "${pkgdir}/usr/bin/studio-display-luks-helper"
     
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
     cat > "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize" << 'EOF'

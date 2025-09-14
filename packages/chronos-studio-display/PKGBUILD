@@ -166,21 +166,29 @@ package() {
 refresh_display() {
     echo "Refreshing Apple Studio Display..."
 
-    # Find DisplayPort connections
-    for connector in /sys/class/drm/card*/card*/status; do
+    # Find and trigger DisplayPort hotplug detection (kernel level - no X11 needed)
+    for connector in /sys/class/drm/card*/status; do
         if [ -e "$connector" ]; then
             # Trigger hotplug detection (same as cable unplug/replug)
             echo detect > "$connector" 2>/dev/null || true
         fi
     done
 
-    # Specifically for AMD GPU + Studio Display - force mode refresh
-    if command -v xrandr >/dev/null 2>&1; then
-        # Get current display and refresh it
-        xrandr --output $(xrandr | grep " connected" | cut -d" " -f1) --mode 3840x2160 --rate 60 2>/dev/null || true
-    fi
+    # Alternative path for card*/card*/status
+    for connector in /sys/class/drm/card*/card*/status; do
+        if [ -e "$connector" ]; then
+            echo detect > "$connector" 2>/dev/null || true
+        fi
+    done
 
-    echo "Display refresh completed"
+    # Force DRM connector reset for Studio Display
+    for connector in /sys/class/drm/card*-DP-*; do
+        if [ -e "$connector/status" ]; then
+            echo detect > "$connector/status" 2>/dev/null || true
+        fi
+    done
+
+    echo "Display refresh completed (kernel level hotplug detection)"
 }
 
 case "$1" in
@@ -189,7 +197,7 @@ case "$1" in
         ;;
     *)
         echo "Usage: $0 {reset|refresh}"
-        echo "This script gently refreshes the display connection"
+        echo "This script gently refreshes the display connection without X11"
         ;;
 esac
 EOF
@@ -198,30 +206,4 @@ EOF
         "${pkgdir}/usr/bin/studio-display-reset"
 
 
-    # GDM/SDDM configuration for stable Studio Display
-    install -dm755 "${pkgdir}/var/lib/gdm/.config"
-    cat > "${pkgdir}/var/lib/gdm/.config/monitors.xml" << 'EOF'
-<monitors version="2">
-  <configuration>
-    <logicalmonitor>
-      <x>0</x>
-      <y>0</y>
-      <scale>1.5</scale>
-      <primary>yes</primary>
-      <monitor>
-        <monitorspec>
-          <connector>Unknown</connector>
-          <vendor>Apple</vendor>
-          <product>Studio Display</product>
-        </monitorspec>
-        <mode>
-          <width>3840</width>
-          <height>2160</height>
-          <rate>60</rate>
-        </mode>
-      </monitor>
-    </logicalmonitor>
-  </configuration>
-</monitors>
-EOF
 }
