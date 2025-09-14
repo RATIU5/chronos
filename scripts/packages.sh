@@ -36,7 +36,6 @@ for pkg in "${otherPkgs[@]}"; do
 		"Apple Studio Display")
 			metapkgs+=("${script_dir}/packages/chronos-studio-display")
 			;;
-		*) echo "Unsupported package selected. Exiting."; exit 1 ;;
 	esac
 done
 for pkg in "${otherPkgs[@]}"; do

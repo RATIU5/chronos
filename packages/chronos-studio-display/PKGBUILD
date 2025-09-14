@@ -16,6 +16,9 @@ depends=(
     'linux-firmware'
 )
 
+provides=('asdbctl')
+conflicts=('asdbctl')
+
 optdepends=()
 
 source=()
