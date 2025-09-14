@@ -26,6 +26,7 @@ depends=(
     'r8168-dkms'
     'lib32-vulkan-radeon'
     'bolt'
+    'plymouth'
 )
 
 optdepends=(
@@ -151,11 +152,23 @@ package() {
     install -Dm644 "${srcdir}/bolt-studio-display.service" \
         "${pkgdir}/usr/lib/systemd/system/bolt-studio-display.service"
 
-    # Early KMS configuration for stable display throughout boot
+    # Early KMS configuration for stable display throughout boot + encryption
     install -dm755 "${pkgdir}/etc/mkinitcpio.conf.d"
     cat > "${pkgdir}/etc/mkinitcpio.conf.d/99-early-kms.conf" << 'EOF'
-# Enable early KMS for AMD GPU and Studio Display
+# Enable early KMS for AMD GPU and Studio Display with encrypted drive support
 MODULES=(amdgpu)
+HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont plymouth block encrypt filesystems fsck)
+EOF
+
+    # Kernel parameters for stable display with encryption
+    install -dm755 "${pkgdir}/etc/kernel"
+    cat > "${pkgdir}/etc/kernel/cmdline" << 'EOF'
+# AMD GPU parameters for Studio Display stability during encryption
+amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1 amdgpu.dcdebugmask=0x10
+# Plymouth for smooth display transitions
+quiet splash plymouth.ignore-serial-consoles
+# Force AMD driver persistence
+video=DP-1:3840x2160@60
 EOF
     
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"

@@ -157,6 +157,74 @@ package() {
 
     ln -sf /usr/bin/asdbctl "${pkgdir}/usr/bin/apple-brightness"
 
+    # Display reset script for login transition issues
+    cat > "${srcdir}/studio-display-reset" << 'EOF'
+#!/bin/bash
+# Reset Apple Studio Display when it goes black after login
+
+# Function to reset display
+reset_display() {
+    # Force DRM reprobe
+    for card in /sys/class/drm/card*; do
+        if [ -e "$card/device/driver/unbind" ] && [ -e "$card/device/driver/bind" ]; then
+            echo $(basename $(readlink $card/device)) > $card/device/driver/unbind 2>/dev/null || true
+            sleep 1
+            echo $(basename $(readlink $card/device)) > $card/device/driver/bind 2>/dev/null || true
+        fi
+    done
+
+    # Force DisplayPort detection
+    for dp in /sys/class/drm/card*/status; do
+        echo detect > "$dp" 2>/dev/null || true
+    done
+
+    # Reset AMD GPU if needed
+    if lspci | grep -i amd | grep -i vga; then
+        echo 1 > /sys/bus/pci/devices/*/reset 2>/dev/null || true
+    fi
+}
+
+case "$1" in
+    reset)
+        reset_display
+        ;;
+    monitor)
+        # Monitor for display issues and auto-reset
+        while true; do
+            if xrandr 2>/dev/null | grep -q "disconnected"; then
+                reset_display
+            fi
+            sleep 5
+        done
+        ;;
+    *)
+        echo "Usage: $0 {reset|monitor}"
+        ;;
+esac
+EOF
+
+    install -Dm755 "${srcdir}/studio-display-reset" \
+        "${pkgdir}/usr/bin/studio-display-reset"
+
+    # Systemd service to auto-reset display on login issues
+    cat > "${srcdir}/studio-display-monitor.service" << 'EOF'
+[Unit]
+Description=Monitor and auto-reset Apple Studio Display
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/studio-display-reset monitor
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+
+    install -Dm644 "${srcdir}/studio-display-monitor.service" \
+        "${pkgdir}/usr/lib/systemd/user/studio-display-monitor.service"
+
     # GDM/SDDM configuration for stable Studio Display
     install -dm755 "${pkgdir}/var/lib/gdm/.config"
     cat > "${pkgdir}/var/lib/gdm/.config/monitors.xml" << 'EOF'
