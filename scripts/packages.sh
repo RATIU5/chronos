@@ -27,17 +27,20 @@ esac
 echo "$machine"
 
 echo "What other packages would you like to install?"
-otherPkgs=$(gum_choose \
+readarray -t otherPkgs < <(gum_choose \
 	"Apple Studio Display" \
 	--no-limit
 )
-for pkg in $otherPkgs; do
+for pkg in "${otherPkgs[@]}"; do
 	case $pkg in
 		"Apple Studio Display")
 			metapkgs+=("${script_dir}/packages/chronos-studio-display")
 			;;
 		*) echo "Unsupported package selected. Exiting."; exit 1 ;;
 	esac
+done
+for pkg in "${otherPkgs[@]}"; do
+	echo "$pkg"
 done
 
 for i in "${metapkgs[@]}"; do
