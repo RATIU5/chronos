@@ -1,0 +1,45 @@
+# Maintainer: RATIU5
+pkgname=chronos-apple-studio-display
+pkgver=0.0.1
+pkgrel=1
+pkgdesc="Essential drivers and utilities for Apple Studio Display support"
+arch=('x86_64')
+url="https://github.com/RATIU5/chronos"
+license=(MIT)
+
+depends=(
+    'linux-headers'
+    'rust'
+    'cargo'
+    'git'
+    'udev'
+    'linux-firmware'
+)
+
+optdepends=()
+
+source=()
+
+sha256sums=()
+
+prepare() {
+    cat > "${srcdir}/50-apple-studio-display.rules" << 'EOF'
+KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", GROUP="users", OWNER="root", MODE="0660"
+KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9243", GROUP="users", OWNER="root", MODE="0660"
+EOF
+
+    cd "${srcdir}"
+    git clone https://github.com/juliuszint/asdbctl.git
+    cd asdbctl
+    cargo build --release
+}
+
+package() {
+    install -Dm644 "${srcdir}/50-apple-studio-display.rules" \
+        "${pkgdir}/etc/udev/rules.d/50-apple-studio-display.rules"
+    
+    install -Dm755 "${srcdir}/asdbctl/target/release/asdbctl" \
+        "${pkgdir}/usr/bin/asdbctl"
+    
+    ln -sf /usr/bin/asdbctl "${pkgdir}/usr/bin/apple-brightness"
+}

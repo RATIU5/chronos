@@ -26,6 +26,20 @@ case $machine in
 esac
 echo "$machine"
 
+echo "What other packages would you like to install?"
+otherPkgs=$(gum_choose \
+	"Apple Studio Display" \
+	--no-limit
+)
+for pkg in $otherPkgs; do
+	case $pkg in
+		"Apple Studio Display")
+			metapkgs+=("${script_dir}/packages/chronos-studio-display")
+			;;
+		*) echo "Unsupported package selected. Exiting."; exit 1 ;;
+	esac
+done
+
 for i in "${metapkgs[@]}"; do
 	metainstallflags="--needed"
 	$CHRONOS_CONFIRM_EVERY_STEP && showfun install-local-pkgbuild
