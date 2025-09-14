@@ -156,8 +156,15 @@ package() {
     install -dm755 "${pkgdir}/etc/mkinitcpio.conf.d"
     cat > "${pkgdir}/etc/mkinitcpio.conf.d/99-early-kms.conf" << 'EOF'
 # Enable early KMS for AMD GPU and Studio Display with encrypted drive support
-MODULES=(amdgpu)
-HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont plymouth block encrypt filesystems fsck)
+MODULES=(amdgpu radeon drm drm_kms_helper)
+HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)
+EOF
+
+    # Console configuration for encrypted password visibility
+    cat > "${pkgdir}/etc/mkinitcpio.conf.d/98-console.conf" << 'EOF'
+# Console configuration for Studio Display during encryption
+BINARIES=(/usr/bin/setfont)
+FILES=(/usr/share/kbd/consolefonts/ter-132n.psf.gz)
 EOF
 
     # Kernel parameters for stable display with encryption
@@ -165,10 +172,10 @@ EOF
     cat > "${pkgdir}/etc/kernel/cmdline" << 'EOF'
 # AMD GPU parameters for Studio Display stability during encryption
 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1 amdgpu.dcdebugmask=0x10
-# Plymouth for smooth display transitions
-quiet splash plymouth.ignore-serial-consoles
-# Force AMD driver persistence
-video=DP-1:3840x2160@60
+# Console font and framebuffer for encrypted password screen
+console=tty0 consoleblank=0 fbcon=nodefer
+# Force AMD driver early and persistent
+video=DP-1:3840x2160@60 drm.debug=0x04
 EOF
     
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
