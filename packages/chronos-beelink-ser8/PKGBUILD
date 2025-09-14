@@ -103,38 +103,6 @@ ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{vendor}=="0x1", ATTR{device}=="0x1
 ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{vendor}=="0x1", ATTR{device}=="0x9243", ATTR{authorized}="1"
 EOF
 
-    # DisplayPort and USB-C configuration - Studio Display workaround
-    cat > "${srcdir}/ser8-display.conf" << 'EOF'
-# Enhanced DisplayPort configuration for SER8 - Apple Studio Display fix
-Section "Device"
-    Identifier "AMD"
-    Driver "amdgpu"
-    Option "DRI" "3"
-    Option "TearFree" "true"
-    Option "VariableRefresh" "false"
-EndSection
-
-Section "Monitor"
-    Identifier "Studio Display"
-    VendorName "Apple"
-    ModelName "Studio Display"
-    # Force stable 4K resolution instead of problematic 5K
-    Modeline "3840x2160_60.00" 712.75 3840 4160 4576 5312 2160 2163 2168 2237 -hsync +vsync
-    Option "PreferredMode" "3840x2160_60.00"
-EndSection
-
-Section "Screen"
-    Identifier "Screen0"
-    Device "AMD"
-    Monitor "Studio Display"
-    DefaultDepth 24
-    SubSection "Display"
-        Depth 24
-        Modes "3840x2160_60.00" "2560x1440" "1920x1080"
-    EndSubSection
-EndSection
-EOF
-
     # Bolt daemon configuration for auto-authorization
     cat > "${srcdir}/bolt.conf" << 'EOF'
 [global]
@@ -176,9 +144,6 @@ package() {
 
     install -Dm644 "${srcdir}/ser8-thunderbolt.conf" \
         "${pkgdir}/etc/udev/rules.d/99-ser8-thunderbolt.conf"
-
-    install -Dm644 "${srcdir}/ser8-display.conf" \
-        "${pkgdir}/etc/X11/xorg.conf.d/20-ser8-amdgpu.conf"
 
     install -Dm644 "${srcdir}/bolt.conf" \
         "${pkgdir}/etc/bolt/bolt.conf"

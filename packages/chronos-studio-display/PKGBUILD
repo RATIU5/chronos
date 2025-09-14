@@ -66,6 +66,38 @@ ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{vendor}=="0x1", ATTR{device}=="0x1
 ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{vendor}=="0x1", ATTR{device}=="0x9243", ATTR{authorized}=="0", ATTR{authorized}="1"
 EOF
 
+    # X11 display configuration for AMD GPU compatibility
+    cat > "${srcdir}/apple-studio-display-x11.conf" << 'EOF'
+# X11 DisplayPort configuration for Apple Studio Display - AMD GPU fix
+Section "Device"
+    Identifier "AMD"
+    Driver "amdgpu"
+    Option "DRI" "3"
+    Option "TearFree" "true"
+    Option "VariableRefresh" "false"
+EndSection
+
+Section "Monitor"
+    Identifier "Studio Display"
+    VendorName "Apple"
+    ModelName "Studio Display"
+    # Force stable 4K resolution instead of problematic 5K
+    Modeline "3840x2160_60.00" 712.75 3840 4160 4576 5312 2160 2163 2168 2237 -hsync +vsync
+    Option "PreferredMode" "3840x2160_60.00"
+EndSection
+
+Section "Screen"
+    Identifier "Screen0"
+    Device "AMD"
+    Monitor "Studio Display"
+    DefaultDepth 24
+    SubSection "Display"
+        Depth 24
+        Modes "3840x2160_60.00" "2560x1440" "1920x1080"
+    EndSubSection
+EndSection
+EOF
+
     # Wayland-specific monitor configuration helper
     cat > "${srcdir}/apple-studio-display-wayland-setup" << 'EOF'
 #!/bin/bash
@@ -80,21 +112,22 @@ fi
 # Create monitors configuration directory if it doesn't exist
 mkdir -p ~/.config/hypr/
 
-# Create basic Apple Studio Display configuration for Hyprland
+# Create Apple Studio Display configuration for Hyprland with AMD GPU workaround
 cat > ~/.config/hypr/apple-studio-display.conf << 'HYPR_EOF'
-# Apple Studio Display configuration for Hyprland
-# 5K resolution at 60Hz with proper scaling
-monitor=,5120x2880@60,auto,1.5
+# Apple Studio Display configuration for Hyprland - AMD GPU compatible
+# Use 4K resolution instead of 5K to avoid AMD driver issues
+monitor=,3840x2160@60,auto,1.5
 
-# Enable high refresh rate if supported
-monitor=,5120x2880@60,auto,1.5
+# Fallback to 1440p if 4K has issues
+monitor=,2560x1440@60,auto,1.0
 
-# Fallback configuration for compatibility
-monitor=,preferred,auto,1.5
+# Last resort fallback
+monitor=,preferred,auto,1.0
 HYPR_EOF
 
 echo "Apple Studio Display Hyprland configuration created at ~/.config/hypr/apple-studio-display.conf"
 echo "Add 'source = ~/.config/hypr/apple-studio-display.conf' to your hyprland.conf"
+echo "Using 4K resolution to avoid AMD GPU flickering issues with 5K"
 EOF
 
     cd "${srcdir}"
@@ -106,18 +139,21 @@ EOF
 package() {
     install -Dm644 "${srcdir}/50-apple-studio-display.rules" \
         "${pkgdir}/etc/udev/rules.d/50-apple-studio-display.rules"
-    
+
     install -Dm644 "${srcdir}/90-displayport-detection.rules" \
         "${pkgdir}/etc/udev/rules.d/90-displayport-detection.rules"
-    
+
     install -Dm644 "${srcdir}/95-thunderbolt-apple-display.rules" \
         "${pkgdir}/etc/udev/rules.d/95-thunderbolt-apple-display.rules"
-    
+
+    install -Dm644 "${srcdir}/apple-studio-display-x11.conf" \
+        "${pkgdir}/etc/X11/xorg.conf.d/20-apple-studio-display.conf"
+
     install -Dm755 "${srcdir}/apple-studio-display-wayland-setup" \
         "${pkgdir}/usr/bin/apple-studio-display-wayland-setup"
-    
+
     install -Dm755 "${srcdir}/asdbctl/target/release/asdbctl" \
         "${pkgdir}/usr/bin/asdbctl"
-    
+
     ln -sf /usr/bin/asdbctl "${pkgdir}/usr/bin/apple-brightness"
 }
