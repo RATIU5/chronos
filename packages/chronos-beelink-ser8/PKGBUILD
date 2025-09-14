@@ -10,7 +10,7 @@ license=(None)
 depends=(
     'amd-ucode'
     'linux-headers'
-    'dkms' 
+    'dkms'
     'base-devel'
     'mesa'
     'vulkan-radeon'
@@ -26,7 +26,6 @@ depends=(
     'r8168-dkms'
     'lib32-vulkan-radeon'
     'bolt'
-    'thunderbolt-utils-git'
 )
 
 optdepends=(
@@ -91,13 +90,17 @@ EOF
     # USB4/Thunderbolt specific configuration
     cat > "${srcdir}/ser8-thunderbolt.conf" << 'EOF'
 # USB4 and Thunderbolt configuration for SER8
-ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{authorized}=="0", ATTR{authorized}="1"
+ACTION=="add|change", SUBSYSTEM=="thunderbolt", ATTR{authorized}=="0", ATTR{authorized}="1"
 
 # Enable PCIe tunneling for external GPUs and displays
 SUBSYSTEM=="thunderbolt", ATTR{security}!="none", ATTR{security}="user"
 
 # USB4 device authorization
-ACTION=="add", SUBSYSTEM=="usb4", ATTR{authorized}=="0", ATTR{authorized}="1"
+ACTION=="add|change", SUBSYSTEM=="usb4", ATTR{authorized}=="0", ATTR{authorized}="1"
+
+# Apple Studio Display specific authorization
+ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{vendor}=="0x1", ATTR{device}=="0x1114", ATTR{authorized}="1"
+ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{vendor}=="0x1", ATTR{device}=="0x9243", ATTR{authorized}="1"
 EOF
 
     # DisplayPort and USB-C configuration
@@ -117,26 +120,57 @@ Section "Screen"
     DefaultDepth 24
 EndSection
 EOF
+
+    # Bolt daemon configuration for auto-authorization
+    cat > "${srcdir}/bolt.conf" << 'EOF'
+[global]
+# Auto-authorize all devices (for Studio Display)
+AuthMode=enabled
+Policy=auto
+EOF
+
+    # Systemd service to ensure bolt starts early and authorizes Studio Display
+    cat > "${srcdir}/bolt-studio-display.service" << 'EOF'
+[Unit]
+Description=Auto-authorize Apple Studio Display via Thunderbolt
+After=bolt.service
+Wants=bolt.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/boltctl authorize --first-time $(boltctl list | grep "Apple" | head -1 | cut -d' ' -f1)
+RemainAfterExit=yes
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target
+EOF
 }
 
 package() {
     install -Dm644 "${srcdir}/blacklist-r8169.conf" \
         "${pkgdir}/etc/modprobe.d/ser8-blacklist.conf"
-    
+
     install -Dm644 "${srcdir}/ser8-modprobe.conf" \
         "${pkgdir}/etc/modprobe.d/ser8-optimizations.conf"
-    
+
     install -Dm644 "${srcdir}/ser8-sysctl.conf" \
         "${pkgdir}/etc/sysctl.d/99-ser8-optimizations.conf"
-    
+
     install -Dm644 "${srcdir}/ser8-networkmanager.conf" \
         "${pkgdir}/etc/NetworkManager/conf.d/ser8.conf"
-    
+
     install -Dm644 "${srcdir}/ser8-thunderbolt.conf" \
         "${pkgdir}/etc/udev/rules.d/99-ser8-thunderbolt.conf"
-    
+
     install -Dm644 "${srcdir}/ser8-display.conf" \
         "${pkgdir}/etc/X11/xorg.conf.d/20-ser8-amdgpu.conf"
+
+    install -Dm644 "${srcdir}/bolt.conf" \
+        "${pkgdir}/etc/bolt/bolt.conf"
+
+    install -Dm644 "${srcdir}/bolt-studio-display.service" \
+        "${pkgdir}/usr/lib/systemd/system/bolt-studio-display.service"
     
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
     cat > "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize" << 'EOF'
