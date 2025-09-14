@@ -156,4 +156,31 @@ package() {
         "${pkgdir}/usr/bin/asdbctl"
 
     ln -sf /usr/bin/asdbctl "${pkgdir}/usr/bin/apple-brightness"
+
+    # GDM/SDDM configuration for stable Studio Display
+    install -dm755 "${pkgdir}/var/lib/gdm/.config"
+    cat > "${pkgdir}/var/lib/gdm/.config/monitors.xml" << 'EOF'
+<monitors version="2">
+  <configuration>
+    <logicalmonitor>
+      <x>0</x>
+      <y>0</y>
+      <scale>1.5</scale>
+      <primary>yes</primary>
+      <monitor>
+        <monitorspec>
+          <connector>Unknown</connector>
+          <vendor>Apple</vendor>
+          <product>Studio Display</product>
+        </monitorspec>
+        <mode>
+          <width>3840</width>
+          <height>2160</height>
+          <rate>60</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+  </configuration>
+</monitors>
+EOF
 }

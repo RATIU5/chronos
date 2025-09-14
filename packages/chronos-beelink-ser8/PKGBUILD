@@ -150,6 +150,13 @@ package() {
 
     install -Dm644 "${srcdir}/bolt-studio-display.service" \
         "${pkgdir}/usr/lib/systemd/system/bolt-studio-display.service"
+
+    # Early KMS configuration for stable display throughout boot
+    install -dm755 "${pkgdir}/etc/mkinitcpio.conf.d"
+    cat > "${pkgdir}/etc/mkinitcpio.conf.d/99-early-kms.conf" << 'EOF'
+# Enable early KMS for AMD GPU and Studio Display
+MODULES=(amdgpu)
+EOF
     
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
     cat > "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize" << 'EOF'
