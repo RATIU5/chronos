@@ -68,33 +68,12 @@ EOF
 
     # X11 display configuration for AMD GPU compatibility
     cat > "${srcdir}/apple-studio-display-x11.conf" << 'EOF'
-# X11 DisplayPort configuration for Apple Studio Display - AMD GPU fix
+# X11 DisplayPort configuration for Apple Studio Display - AMD GPU
 Section "Device"
     Identifier "AMD"
     Driver "amdgpu"
     Option "DRI" "3"
     Option "TearFree" "true"
-    Option "VariableRefresh" "false"
-EndSection
-
-Section "Monitor"
-    Identifier "Studio Display"
-    VendorName "Apple"
-    ModelName "Studio Display"
-    # Force stable 4K resolution instead of problematic 5K
-    Modeline "3840x2160_60.00" 712.75 3840 4160 4576 5312 2160 2163 2168 2237 -hsync +vsync
-    Option "PreferredMode" "3840x2160_60.00"
-EndSection
-
-Section "Screen"
-    Identifier "Screen0"
-    Device "AMD"
-    Monitor "Studio Display"
-    DefaultDepth 24
-    SubSection "Display"
-        Depth 24
-        Modes "3840x2160_60.00" "2560x1440" "1920x1080"
-    EndSubSection
 EndSection
 EOF
 
@@ -104,7 +83,8 @@ EOF
 # Helper script for Apple Studio Display Wayland setup
 
 # Check if running Wayland
-if [ "$XDG_SESSION_TYPE" != "wayland" ]; then
+if [ "$XDG_SESSION_TYPE" != "wayland" ];
+then
     echo "This script is for Wayland sessions only"
     exit 1
 fi
@@ -114,20 +94,13 @@ mkdir -p ~/.config/hypr/
 
 # Create Apple Studio Display configuration for Hyprland with AMD GPU workaround
 cat > ~/.config/hypr/apple-studio-display.conf << 'HYPR_EOF'
-# Apple Studio Display configuration for Hyprland - AMD GPU compatible
-# Use 4K resolution instead of 5K to avoid AMD driver issues
-monitor=,3840x2160@60,auto,1.5
-
-# Fallback to 1440p if 4K has issues
-monitor=,2560x1440@60,auto,1.0
-
-# Last resort fallback
-monitor=,preferred,auto,1.0
+# Apple Studio Display configuration for Hyprland
+# Use highres to automatically select the highest available resolution.
+monitor=,highres,auto,1
 HYPR_EOF
 
 echo "Apple Studio Display Hyprland configuration created at ~/.config/hypr/apple-studio-display.conf"
 echo "Add 'source = ~/.config/hypr/apple-studio-display.conf' to your hyprland.conf"
-echo "Using 4K resolution to avoid AMD GPU flickering issues with 5K"
 EOF
 
     cd "${srcdir}"
@@ -157,96 +130,52 @@ package() {
 
     ln -sf /usr/bin/asdbctl "${pkgdir}/usr/bin/apple-brightness"
 
-    # Smart Studio Display connector detection and fix
+    # Studio Display connector fix - simple hotplug detection
     cat > "${srcdir}/studio-display-reset" << 'EOF'
 #!/bin/bash
-# Auto-detect which DP connector has high-res modes and configure accordingly
-
-detect_highres_connector() {
-    local highres_dp=""
-    local lowres_dp=""
-
-    # Check DP-3 for high-res modes (5120x2880 or 3840x2160)
-    if grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-DP-3/modes 2>/dev/null; then
-        highres_dp="DP-3"
-        lowres_dp="DP-4"
-    # Check DP-4 for high-res modes
-    elif grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-DP-4/modes 2>/dev/null; then
-        highres_dp="DP-4"
-        lowres_dp="DP-3"
-    fi
-
-    echo "$highres_dp,$lowres_dp"
-}
+# Fix Studio Display by triggering hotplug detection
 
 fix_display() {
-    echo "Auto-detecting Studio Display high-res connector..."
+    echo "Triggering Studio Display hotplug detection..."
 
-    local connectors=$(detect_highres_connector)
-    local highres_dp=$(echo $connectors | cut -d',' -f1)
-    local lowres_dp=$(echo $connectors | cut -d',' -f2)
+    # Check available files first
+    echo "Available DP-3 files:"
+    ls /sys/class/drm/card1-DP-3/ 2>/dev/null | head -5
+    echo "Available DP-4 files:"
+    ls /sys/class/drm/card1-DP-4/ 2>/dev/null | head -5
 
-    if [ -n "$highres_dp" ]; then
-        echo "High-res connector: $highres_dp"
-        echo "Low-res connector: $lowres_dp"
+    # Force detection on both connectors
+    for dp in DP-3 DP-4; do
+        if [ -e "/sys/class/drm/card1-$dp/status" ]; then
+            echo "Triggering detection on $dp..."
+            echo detect > "/sys/class/drm/card1-$dp/status" 2>/dev/null || echo "  Failed to trigger $dp"
+        fi
+    done
 
-        # SAFE: Only trigger detection, don't disable anything
-        echo detect > "/sys/class/drm/card1-$highres_dp/status" 2>/dev/null || echo "Failed to trigger $highres_dp"
-        echo detect > "/sys/class/drm/card1-$lowres_dp/status" 2>/dev/null || echo "Failed to trigger $lowres_dp"
-        echo "Triggered detection on both connectors"
-
-        # Generate SAFE Limine config - force preferred mode instead of disabling
-        echo ""
-        echo "SAFE approach - add to /boot/limine.cfg KERNEL_CMDLINE:"
-        echo "video=$highres_dp:3840x2160@60"
-        echo "(Do NOT disable $lowres_dp - let system manage both)"
-    else
-        echo "Could not detect high-res connector automatically"
-        echo "Triggering detection on both connectors..."
-        for dp in DP-3 DP-4; do
-            echo detect > "/sys/class/drm/card1-$dp/status" 2>/dev/null || true
-        done
-    fi
+    echo "Hotplug detection completed"
 }
 
 case "$1" in
     fix|reset|refresh)
         fix_display
         ;;
-    detect)
-        connectors=$(detect_highres_connector)
-        highres_dp=$(echo $connectors | cut -d',' -f1)
-        lowres_dp=$(echo $connectors | cut -d',' -f2)
-        if [ -n "$highres_dp" ]; then
-            echo "High-res: $highres_dp, Low-res: $lowres_dp"
-        else
-            echo "Could not detect high-res connector"
-        fi
-        ;;
     status)
-        echo "Studio Display connector analysis:"
-        for dp in DP-3 DP-4; do
-            status=$(cat /sys/class/drm/card1-$dp/status 2>/dev/null || echo 'unknown')
-            echo "$dp: $status"
-            if [ "$status" = "connected" ]; then
-                echo "  Available modes:"
-                head -3 /sys/class/drm/card1-$dp/modes 2>/dev/null | sed 's/^/    /'
-                if grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-$dp/modes 2>/dev/null; then
-                    echo "    >>> HIGH-RES CONNECTOR <<<"
-                fi
-            fi
-            echo ""
-        done
+        echo "Studio Display connector status:"
+        echo "DP-3: $(cat /sys/class/drm/card1-DP-3/status 2>/dev/null || echo 'unknown')"
+        echo "DP-4: $(cat /sys/class/drm/card1-DP-4/status 2>/dev/null || echo 'unknown')"
+        echo ""
+        echo "DP-3 modes:"
+        head -3 /sys/class/drm/card1-DP-3/modes 2>/dev/null || echo "none"
+        echo "DP-4 modes:"
+        head -3 /sys/class/drm/card1-DP-4/modes 2>/dev/null || echo "none"
         ;;
     *)
-        echo "Usage: $0 {fix|detect|status}"
-        echo "Smart Studio Display connector management"
+        echo "Usage: $0 {fix|status}"
+        echo "Triggers hotplug detection for Studio Display"
         ;;
 esac
 EOF
 
     install -Dm755 "${srcdir}/studio-display-reset" \
         "${pkgdir}/usr/bin/studio-display-reset"
-
-
 }

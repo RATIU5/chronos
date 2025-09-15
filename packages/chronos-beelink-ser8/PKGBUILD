@@ -63,8 +63,8 @@ EOF
 # Audio optimizations
 options snd-hda-intel power_save=0 power_save_controller=N
 
-# AMD GPU optimizations with DisplayPort support - force stable resolution for Studio Display
-options amdgpu psr=0
+# AMD GPU optimizations
+options amdgpu dc=1 audio=1 dpm=1
 
 # USB4/Thunderbolt support (replaces thunderbolt module)
 options thunderbolt dyndbg=+p
@@ -174,59 +174,32 @@ EOF
         "${pkgdir}/usr/bin/studio-display-luks-helper"
 
     # Limine kernel cmdline configuration for Studio Display
-    install -dm755 "${pkgdir}/etc/limine"
-    cat > "${pkgdir}/etc/limine/studio-display.conf" << 'EOF'
+    install -dm755 "${pkgdir}/etc/default"
+    cat > "${pkgdir}/etc/default/limine-studio-display" << 'EOF'
 # Limine kernel parameters for Apple Studio Display fix
 # Add these to your limine.cfg KERNEL_CMDLINE
-video=DP-3:d video=DP-4:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1
+# Use amdgpu.sg_display=0 to prevent flickering on some AMD APUs.
+# Use video=DP-4:5120x2880@60 to force the correct resolution on a specific display port.
+# You may need to change DP-4 to DP-3 or another value depending on your physical port.
+LINUX_KERNEL_CMDLINE="amdgpu.sg_display=0 video=DP-4:5120x2880@60"
 EOF
 
-    # Dynamic Limine setup script
+    # Instructions for applying Limine config
     cat > "${srcdir}/limine-setup-instructions" << 'EOF'
 #!/bin/bash
-echo "Dynamic Studio Display Limine Setup"
-echo "===================================="
-
-# Auto-detect which connector has high-res modes
-detect_highres_connector() {
-    local highres_dp=""
-    local lowres_dp=""
-
-    if grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-DP-3/modes 2>/dev/null; then
-        highres_dp="DP-3"
-        lowres_dp="DP-4"
-    elif grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-DP-4/modes 2>/dev/null; then
-        highres_dp="DP-4"
-        lowres_dp="DP-3"
-    fi
-
-    echo "$highres_dp,$lowres_dp"
-}
-
-connectors=$(detect_highres_connector)
-highres_dp=$(echo $connectors | cut -d',' -f1)
-lowres_dp=$(echo $connectors | cut -d',' -f2)
-
-if [ -n "$highres_dp" ]; then
-    echo "Detected high-res connector: $highres_dp"
-    echo "Detected low-res connector: $lowres_dp"
-    echo ""
-    echo "SAFE approach - add this to your /boot/limine.cfg KERNEL_CMDLINE:"
-    echo "video=$highres_dp:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
-    echo ""
-    echo "Complete example entry:"
-    echo "KERNEL_CMDLINE=root=/dev/sdXY video=$highres_dp:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
-    echo ""
-    echo "NOTE: This forces the high-res connector to 4K without disabling the other"
-else
-    echo "ERROR: Could not detect Studio Display connectors"
-    echo "Run 'studio-display-reset status' for more info"
-fi
+echo "To apply Studio Display fix with Limine:"
+echo "1. Edit your /boot/limine.cfg"
+echo "2. Add to KERNEL_CMDLINE line:"
+echo "   amdgpu.sg_display=0 video=DP-4:5120x2880@60"
+echo "3. Save and reboot"
+echo ""
+echo "Example limine.cfg entry:"
+echo "KERNEL_CMDLINE=root=/dev/sdXY amdgpu.sg_display=0 video=DP-4:5120x2880@60"
 EOF
 
     install -Dm755 "${srcdir}/limine-setup-instructions" \
         "${pkgdir}/usr/bin/studio-display-limine-setup"
-    
+
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
     cat > "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize" << 'EOF'
 #!/bin/bash
@@ -245,7 +218,7 @@ case $1 in
 esac
 EOF
     chmod +x "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize"
-    
+
     install -dm755 "${pkgdir}/etc/udev/rules.d"
     cat > "${pkgdir}/etc/udev/rules.d/99-ser8-io-schedulers.rules" << 'EOF'
 # NVMe optimization
