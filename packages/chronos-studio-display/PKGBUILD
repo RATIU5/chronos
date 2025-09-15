@@ -157,48 +157,88 @@ package() {
 
     ln -sf /usr/bin/asdbctl "${pkgdir}/usr/bin/apple-brightness"
 
-    # Studio Display connector fix - simple hotplug detection
+    # Smart Studio Display connector detection and fix
     cat > "${srcdir}/studio-display-reset" << 'EOF'
 #!/bin/bash
-# Fix Studio Display by triggering hotplug detection
+# Auto-detect which DP connector has high-res modes and configure accordingly
+
+detect_highres_connector() {
+    local highres_dp=""
+    local lowres_dp=""
+
+    # Check DP-3 for high-res modes (5120x2880 or 3840x2160)
+    if grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-DP-3/modes 2>/dev/null; then
+        highres_dp="DP-3"
+        lowres_dp="DP-4"
+    # Check DP-4 for high-res modes
+    elif grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-DP-4/modes 2>/dev/null; then
+        highres_dp="DP-4"
+        lowres_dp="DP-3"
+    fi
+
+    echo "$highres_dp,$lowres_dp"
+}
 
 fix_display() {
-    echo "Triggering Studio Display hotplug detection..."
+    echo "Auto-detecting Studio Display high-res connector..."
 
-    # Check available files first
-    echo "Available DP-3 files:"
-    ls /sys/class/drm/card1-DP-3/ 2>/dev/null | head -5
-    echo "Available DP-4 files:"
-    ls /sys/class/drm/card1-DP-4/ 2>/dev/null | head -5
+    local connectors=$(detect_highres_connector)
+    local highres_dp=$(echo $connectors | cut -d',' -f1)
+    local lowres_dp=$(echo $connectors | cut -d',' -f2)
 
-    # Force detection on both connectors
-    for dp in DP-3 DP-4; do
-        if [ -e "/sys/class/drm/card1-$dp/status" ]; then
-            echo "Triggering detection on $dp..."
-            echo detect > "/sys/class/drm/card1-$dp/status" 2>/dev/null || echo "  Failed to trigger $dp"
-        fi
-    done
+    if [ -n "$highres_dp" ]; then
+        echo "High-res connector: $highres_dp"
+        echo "Low-res connector: $lowres_dp"
 
-    echo "Hotplug detection completed"
+        # Force detection on the high-res connector
+        echo detect > "/sys/class/drm/card1-$highres_dp/status" 2>/dev/null || echo "Failed to trigger $highres_dp"
+        echo "Triggered detection on $highres_dp (high-res)"
+
+        # Generate Limine config for this setup
+        echo ""
+        echo "For permanent fix, add to /boot/limine.cfg KERNEL_CMDLINE:"
+        echo "video=$lowres_dp:d video=$highres_dp:3840x2160@60"
+    else
+        echo "Could not detect high-res connector automatically"
+        echo "Triggering detection on both connectors..."
+        for dp in DP-3 DP-4; do
+            echo detect > "/sys/class/drm/card1-$dp/status" 2>/dev/null || true
+        done
+    fi
 }
 
 case "$1" in
     fix|reset|refresh)
         fix_display
         ;;
+    detect)
+        connectors=$(detect_highres_connector)
+        highres_dp=$(echo $connectors | cut -d',' -f1)
+        lowres_dp=$(echo $connectors | cut -d',' -f2)
+        if [ -n "$highres_dp" ]; then
+            echo "High-res: $highres_dp, Low-res: $lowres_dp"
+        else
+            echo "Could not detect high-res connector"
+        fi
+        ;;
     status)
-        echo "Studio Display connector status:"
-        echo "DP-3: $(cat /sys/class/drm/card1-DP-3/status 2>/dev/null || echo 'unknown')"
-        echo "DP-4: $(cat /sys/class/drm/card1-DP-4/status 2>/dev/null || echo 'unknown')"
-        echo ""
-        echo "DP-3 modes:"
-        head -3 /sys/class/drm/card1-DP-3/modes 2>/dev/null || echo "none"
-        echo "DP-4 modes:"
-        head -3 /sys/class/drm/card1-DP-4/modes 2>/dev/null || echo "none"
+        echo "Studio Display connector analysis:"
+        for dp in DP-3 DP-4; do
+            status=$(cat /sys/class/drm/card1-$dp/status 2>/dev/null || echo 'unknown')
+            echo "$dp: $status"
+            if [ "$status" = "connected" ]; then
+                echo "  Available modes:"
+                head -3 /sys/class/drm/card1-$dp/modes 2>/dev/null | sed 's/^/    /'
+                if grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-$dp/modes 2>/dev/null; then
+                    echo "    >>> HIGH-RES CONNECTOR <<<"
+                fi
+            fi
+            echo ""
+        done
         ;;
     *)
-        echo "Usage: $0 {fix|status}"
-        echo "Triggers hotplug detection for Studio Display"
+        echo "Usage: $0 {fix|detect|status}"
+        echo "Smart Studio Display connector management"
         ;;
 esac
 EOF

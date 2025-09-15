@@ -181,17 +181,45 @@ EOF
 video=DP-3:d video=DP-4:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1
 EOF
 
-    # Instructions for applying Limine config
+    # Dynamic Limine setup script
     cat > "${srcdir}/limine-setup-instructions" << 'EOF'
 #!/bin/bash
-echo "To apply Studio Display fix with Limine:"
-echo "1. Edit your /boot/limine.cfg"
-echo "2. Add to KERNEL_CMDLINE line:"
-echo "   video=DP-3:d video=DP-4:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
-echo "3. Save and reboot"
-echo ""
-echo "Example limine.cfg entry:"
-echo "KERNEL_CMDLINE=root=/dev/sdXY video=DP-3:d video=DP-4:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
+echo "Dynamic Studio Display Limine Setup"
+echo "===================================="
+
+# Auto-detect which connector has high-res modes
+detect_highres_connector() {
+    local highres_dp=""
+    local lowres_dp=""
+
+    if grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-DP-3/modes 2>/dev/null; then
+        highres_dp="DP-3"
+        lowres_dp="DP-4"
+    elif grep -q "5120x2880\|3840x2160" /sys/class/drm/card1-DP-4/modes 2>/dev/null; then
+        highres_dp="DP-4"
+        lowres_dp="DP-3"
+    fi
+
+    echo "$highres_dp,$lowres_dp"
+}
+
+connectors=$(detect_highres_connector)
+highres_dp=$(echo $connectors | cut -d',' -f1)
+lowres_dp=$(echo $connectors | cut -d',' -f2)
+
+if [ -n "$highres_dp" ]; then
+    echo "Detected high-res connector: $highres_dp"
+    echo "Detected low-res connector: $lowres_dp"
+    echo ""
+    echo "Add this to your /boot/limine.cfg KERNEL_CMDLINE:"
+    echo "video=$lowres_dp:d video=$highres_dp:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
+    echo ""
+    echo "Complete example entry:"
+    echo "KERNEL_CMDLINE=root=/dev/sdXY video=$lowres_dp:d video=$highres_dp:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
+else
+    echo "ERROR: Could not detect Studio Display connectors"
+    echo "Run 'studio-display-reset status' for more info"
+fi
 EOF
 
     install -Dm755 "${srcdir}/limine-setup-instructions" \
