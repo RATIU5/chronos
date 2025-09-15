@@ -173,14 +173,29 @@ EOF
     install -Dm755 "${srcdir}/studio-display-luks-helper" \
         "${pkgdir}/usr/bin/studio-display-luks-helper"
 
-    # Kernel cmdline to force DP-4 usage for Studio Display
-    install -dm755 "${pkgdir}/etc/kernel"
-    cat > "${pkgdir}/etc/kernel/cmdline" << 'EOF'
-# Force Studio Display to use DP-4 (high-res) instead of DP-3 (low-res)
-video=DP-3:d video=DP-4:3840x2160@60
-# AMD GPU stability
-amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1
+    # Limine kernel cmdline configuration for Studio Display
+    install -dm755 "${pkgdir}/etc/limine"
+    cat > "${pkgdir}/etc/limine/studio-display.conf" << 'EOF'
+# Limine kernel parameters for Apple Studio Display fix
+# Add these to your limine.cfg KERNEL_CMDLINE
+video=DP-3:d video=DP-4:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1
 EOF
+
+    # Instructions for applying Limine config
+    cat > "${srcdir}/limine-setup-instructions" << 'EOF'
+#!/bin/bash
+echo "To apply Studio Display fix with Limine:"
+echo "1. Edit your /boot/limine.cfg"
+echo "2. Add to KERNEL_CMDLINE line:"
+echo "   video=DP-3:d video=DP-4:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
+echo "3. Save and reboot"
+echo ""
+echo "Example limine.cfg entry:"
+echo "KERNEL_CMDLINE=root=/dev/sdXY video=DP-3:d video=DP-4:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
+EOF
+
+    install -Dm755 "${srcdir}/limine-setup-instructions" \
+        "${pkgdir}/usr/bin/studio-display-limine-setup"
     
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
     cat > "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize" << 'EOF'
