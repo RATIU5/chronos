@@ -1,3 +1,25 @@
+install-yay() {
+	gum_style --foreground="#f1fa8c" "Installing yay AUR helper..."
+
+	# Install prerequisites
+	v sudo pacman -Sy --needed --noconfirm git base-devel
+
+	# Create temporary directory and install yay
+	local tmp_dir=$(mktemp -d)
+	x pushd "$tmp_dir"
+
+	v git clone https://aur.archlinux.org/yay.git
+	x pushd yay
+	v makepkg -si --noconfirm
+	x popd
+	x popd
+
+	# Cleanup
+	v rm -rf "$tmp_dir"
+
+	gum_style --foreground="#8be9fd" "yay installed successfully"
+}
+
 install-local-pkgbuild() {
 	local location=$1
 	local installflags=$2
@@ -12,6 +34,11 @@ install-local-pkgbuild() {
 
 	x popd
 }
+
+if ! command -v yay &> /dev/null; then
+	gum_style --foreground="#ff5555" "yay AUR helper not found, installing..."
+	install-yay
+fi
 
 echo "Select your device: "
 machine=$(gum_choose "Beelink SER8" --limit 1)
