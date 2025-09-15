@@ -27,9 +27,8 @@ install-local-pkgbuild() {
 	x pushd $location
 
 	source ./PKGBUILD
-	local yay_flags="$installflags --asdeps"
-	$CHRONOS_CONFIRM_EVERY_STEP || yay_flags="$yay_flags --noconfirm"
-	x yay -S $yay_flags "${depends[@]}"
+	local yay_flags="$installflags --asdeps --noconfirm"
+	x yes | yay -S $yay_flags "${depends[@]}"
 	x makepkg -Asi --noconfirm
 
 	x popd
