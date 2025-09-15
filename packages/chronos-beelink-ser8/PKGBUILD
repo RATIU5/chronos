@@ -64,7 +64,7 @@ EOF
 options snd-hda-intel power_save=0 power_save_controller=N
 
 # AMD GPU optimizations with DisplayPort support - force stable resolution for Studio Display
-options amdgpu si_support=1 cik_support=1 dc=1 audio=1 dpm=1 dcdebugmask=0x10
+options amdgpu psr=0
 
 # USB4/Thunderbolt support (replaces thunderbolt module)
 options thunderbolt dyndbg=+p
@@ -156,7 +156,7 @@ package() {
     install -dm755 "${pkgdir}/etc/mkinitcpio.conf.d"
     cat > "${pkgdir}/etc/mkinitcpio.conf.d/99-studio-display.conf" << 'EOF'
 # Minimal initramfs for LUKS password visibility on Studio Display
-MODULES=()
+MODULES=(amdgpu)
 HOOKS=(base udev autodetect microcode keyboard keymap block encrypt filesystems fsck)
 EOF
 
@@ -211,11 +211,13 @@ if [ -n "$highres_dp" ]; then
     echo "Detected high-res connector: $highres_dp"
     echo "Detected low-res connector: $lowres_dp"
     echo ""
-    echo "Add this to your /boot/limine.cfg KERNEL_CMDLINE:"
-    echo "video=$lowres_dp:d video=$highres_dp:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
+    echo "SAFE approach - add this to your /boot/limine.cfg KERNEL_CMDLINE:"
+    echo "video=$highres_dp:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
     echo ""
     echo "Complete example entry:"
-    echo "KERNEL_CMDLINE=root=/dev/sdXY video=$lowres_dp:d video=$highres_dp:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
+    echo "KERNEL_CMDLINE=root=/dev/sdXY video=$highres_dp:3840x2160@60 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1"
+    echo ""
+    echo "NOTE: This forces the high-res connector to 4K without disabling the other"
 else
     echo "ERROR: Could not detect Studio Display connectors"
     echo "Run 'studio-display-reset status' for more info"

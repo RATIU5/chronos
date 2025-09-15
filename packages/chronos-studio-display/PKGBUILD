@@ -190,14 +190,16 @@ fix_display() {
         echo "High-res connector: $highres_dp"
         echo "Low-res connector: $lowres_dp"
 
-        # Force detection on the high-res connector
+        # SAFE: Only trigger detection, don't disable anything
         echo detect > "/sys/class/drm/card1-$highres_dp/status" 2>/dev/null || echo "Failed to trigger $highres_dp"
-        echo "Triggered detection on $highres_dp (high-res)"
+        echo detect > "/sys/class/drm/card1-$lowres_dp/status" 2>/dev/null || echo "Failed to trigger $lowres_dp"
+        echo "Triggered detection on both connectors"
 
-        # Generate Limine config for this setup
+        # Generate SAFE Limine config - force preferred mode instead of disabling
         echo ""
-        echo "For permanent fix, add to /boot/limine.cfg KERNEL_CMDLINE:"
-        echo "video=$lowres_dp:d video=$highres_dp:3840x2160@60"
+        echo "SAFE approach - add to /boot/limine.cfg KERNEL_CMDLINE:"
+        echo "video=$highres_dp:3840x2160@60"
+        echo "(Do NOT disable $lowres_dp - let system manage both)"
     else
         echo "Could not detect high-res connector automatically"
         echo "Triggering detection on both connectors..."
