@@ -172,6 +172,15 @@ EOF
 
     install -Dm755 "${srcdir}/studio-display-luks-helper" \
         "${pkgdir}/usr/bin/studio-display-luks-helper"
+
+    # Kernel cmdline to force DP-4 usage for Studio Display
+    install -dm755 "${pkgdir}/etc/kernel"
+    cat > "${pkgdir}/etc/kernel/cmdline" << 'EOF'
+# Force Studio Display to use DP-4 (high-res) instead of DP-3 (low-res)
+video=DP-3:d video=DP-4:3840x2160@60
+# AMD GPU stability
+amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.dc=1
+EOF
     
     install -dm755 "${pkgdir}/usr/lib/systemd/system-sleep"
     cat > "${pkgdir}/usr/lib/systemd/system-sleep/ser8-ssd-optimize" << 'EOF'

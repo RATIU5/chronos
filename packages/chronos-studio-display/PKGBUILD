@@ -157,47 +157,41 @@ package() {
 
     ln -sf /usr/bin/asdbctl "${pkgdir}/usr/bin/apple-brightness"
 
-    # Gentle display refresh script that mimics cable unplug/replug
+    # Studio Display connector fix - force DP-4 usage
     cat > "${srcdir}/studio-display-reset" << 'EOF'
 #!/bin/bash
-# Gentle Apple Studio Display refresh (mimics cable unplug/replug)
+# Fix Studio Display by forcing DP-4 (high-res) instead of DP-3 (low-res)
 
-# Function to gently refresh display - only what cable unplug does
-refresh_display() {
-    echo "Refreshing Apple Studio Display..."
+fix_display() {
+    echo "Fixing Studio Display connector selection..."
 
-    # Find and trigger DisplayPort hotplug detection (kernel level - no X11 needed)
-    for connector in /sys/class/drm/card*/status; do
-        if [ -e "$connector" ]; then
-            # Trigger hotplug detection (same as cable unplug/replug)
-            echo detect > "$connector" 2>/dev/null || true
-        fi
-    done
+    # Disable the problematic DP-3 (low-res connector)
+    if [ -e "/sys/class/drm/card1-DP-3/enabled" ]; then
+        echo off > /sys/class/drm/card1-DP-3/enabled 2>/dev/null || true
+        echo "Disabled DP-3 (low-res connector)"
+    fi
 
-    # Alternative path for card*/card*/status
-    for connector in /sys/class/drm/card*/card*/status; do
-        if [ -e "$connector" ]; then
-            echo detect > "$connector" 2>/dev/null || true
-        fi
-    done
+    # Force detection on DP-4 (the correct high-res connector)
+    if [ -e "/sys/class/drm/card1-DP-4/status" ]; then
+        echo detect > /sys/class/drm/card1-DP-4/status 2>/dev/null || true
+        echo "Forced detection on DP-4 (high-res connector)"
+    fi
 
-    # Force DRM connector reset for Studio Display
-    for connector in /sys/class/drm/card*-DP-*; do
-        if [ -e "$connector/status" ]; then
-            echo detect > "$connector/status" 2>/dev/null || true
-        fi
-    done
-
-    echo "Display refresh completed (kernel level hotplug detection)"
+    echo "Studio Display should now use DP-4 with proper resolution"
 }
 
 case "$1" in
-    reset|refresh)
-        refresh_display
+    fix|reset|refresh)
+        fix_display
+        ;;
+    status)
+        echo "Studio Display connector status:"
+        echo "DP-3 (low-res): $(cat /sys/class/drm/card1-DP-3/status 2>/dev/null || echo 'unknown')"
+        echo "DP-4 (high-res): $(cat /sys/class/drm/card1-DP-4/status 2>/dev/null || echo 'unknown')"
         ;;
     *)
-        echo "Usage: $0 {reset|refresh}"
-        echo "This script gently refreshes the display connection without X11"
+        echo "Usage: $0 {fix|status}"
+        echo "Forces Studio Display to use DP-4 (high-res) instead of DP-3 (low-res)"
         ;;
 esac
 EOF
