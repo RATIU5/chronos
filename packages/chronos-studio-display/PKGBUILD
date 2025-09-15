@@ -38,16 +38,16 @@ prepare() {
     # Enhanced udev rules for Apple Studio Display with better permissions
     cat > "${srcdir}/50-apple-studio-display.rules" << 'EOF'
 # Apple Studio Display HID devices
-KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", GROUP="users", OWNER="root", MODE="0660", TAG+="uaccess"
-KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9243", GROUP="users", OWNER="root", MODE="0660", TAG+="uaccess"
+KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTR{idProduct}=="1114", GROUP="users", OWNER="root", MODE="0660", TAG+="uaccess"
+KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTR{idProduct}=="9243", GROUP="users", OWNER="root", MODE="0660", TAG+="uaccess"
 
 # Apple Studio Display USB devices
-SUBSYSTEM=="usb", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", TAG+="uaccess"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9243", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="05ac", ATTR{idProduct}=="1114", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="05ac", ATTR{idProduct}=="9243", TAG+="uaccess"
 
 # Apple Studio Display audio/video devices
-SUBSYSTEM=="video4linux", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", TAG+="uaccess"
-SUBSYSTEM=="sound", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", TAG+="uaccess"
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="05ac", ATTR{idProduct}=="1114", TAG+="uaccess"
+SUBSYSTEM=="sound", ATTRS{idVendor}=="05ac", ATTR{idProduct}=="1114", TAG+="uaccess"
 EOF
 
     # Enhanced DisplayPort detection for Wayland
@@ -96,7 +96,8 @@ mkdir -p ~/.config/hypr/
 cat > ~/.config/hypr/apple-studio-display.conf << 'HYPR_EOF'
 # Apple Studio Display configuration for Hyprland
 # Use highres to automatically select the highest available resolution.
-monitor=,highres,auto,1
+monitor=DP-4,5120x2880@60,0x0,1
+monitor=DP-3,disable
 HYPR_EOF
 
 echo "Apple Studio Display Hyprland configuration created at ~/.config/hypr/apple-studio-display.conf"

@@ -178,10 +178,8 @@ EOF
     cat > "${pkgdir}/etc/default/limine-studio-display" << 'EOF'
 # Limine kernel parameters for Apple Studio Display fix
 # Add these to your limine.cfg KERNEL_CMDLINE
-# Use amdgpu.sg_display=0 to prevent flickering on some AMD APUs.
-# Use video=DP-4:5120x2880@60 to force the correct resolution on a specific display port.
-# You may need to change DP-4 to DP-3 or another value depending on your physical port.
-LINUX_KERNEL_CMDLINE="amdgpu.sg_display=0 video=DP-4:5120x2880@60"
+# Use video=DP-4:5120x2880@60 to force the correct resolution and disable the other display.
+LINUX_KERNEL_CMDLINE="video=DP-4:5120x2880@60 video=DP-3:d"
 EOF
 
     # Instructions for applying Limine config
@@ -190,11 +188,11 @@ EOF
 echo "To apply Studio Display fix with Limine:"
 echo "1. Edit your /boot/limine.cfg"
 echo "2. Add to KERNEL_CMDLINE line:"
-echo "   amdgpu.sg_display=0 video=DP-4:5120x2880@60"
+echo "   video=DP-4:5120x2880@60 video=DP-3:d"
 echo "3. Save and reboot"
 echo ""
 echo "Example limine.cfg entry:"
-echo "KERNEL_CMDLINE=root=/dev/sdXY amdgpu.sg_display=0 video=DP-4:5120x2880@60"
+echo "KERNEL_CMDLINE=root=/dev/sdXY video=DP-4:5120x2880@60 video=DP-3:d"
 EOF
 
     install -Dm755 "${srcdir}/limine-setup-instructions" \
