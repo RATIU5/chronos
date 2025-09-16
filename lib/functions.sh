@@ -108,21 +108,10 @@ execute() {
             esac
         done
         
-        # Add appropriate flag based on CHRONOS_CONFIRM_STEPS
-        if [[ "${CHRONOS_CONFIRM_STEPS:-false}" == "false" ]]; then
-            # Auto-confirm pacman operations when user confirmation is disabled
-            if [[ "$has_confirm" == "false" && "$has_noconfirm" == "false" ]]; then
-                modified_cmd+=("--noconfirm")
-            fi
-        else
-            # Remove --noconfirm when user confirmation is enabled (let pacman ask)
-            if [[ "$has_noconfirm" == "true" ]]; then
-                local -a temp_cmd
-                for arg in "${modified_cmd[@]}"; do
-                    [[ "$arg" != "--noconfirm" ]] && temp_cmd+=("$arg")
-                done
-                modified_cmd=("${temp_cmd[@]}")
-            fi
+        # ALWAYS add --noconfirm for pacman (regardless of CHRONOS_CONFIRM_STEPS)
+        # User confirmation controls command preview, not pacman's internal prompts
+        if [[ "$has_confirm" == "false" && "$has_noconfirm" == "false" ]]; then
+            modified_cmd+=("--noconfirm")
         fi
     fi
     
@@ -224,14 +213,12 @@ execute() {
                 # Re-evaluate command modifications in case settings changed
                 modified_cmd=("$@")
                 if [[ "${modified_cmd[0]}" =~ ^(pacman|yay)$ ]] || [[ "${modified_cmd[0]}" == "sudo" && "${modified_cmd[1]}" =~ ^(pacman|yay)$ ]]; then
-                    if [[ "${CHRONOS_CONFIRM_STEPS:-false}" == "false" ]]; then
-                        # Check if --noconfirm needs to be added
-                        local needs_noconfirm=true
-                        for arg in "${modified_cmd[@]}"; do
-                            [[ "$arg" == "--noconfirm" || "$arg" == "--confirm" ]] && needs_noconfirm=false
-                        done
-                        [[ "$needs_noconfirm" == "true" ]] && modified_cmd+=("--noconfirm")
-                    fi
+                    # ALWAYS ensure --noconfirm for pacman on retry
+                    local needs_noconfirm=true
+                    for arg in "${modified_cmd[@]}"; do
+                        [[ "$arg" == "--noconfirm" || "$arg" == "--confirm" ]] && needs_noconfirm=false
+                    done
+                    [[ "$needs_noconfirm" == "true" ]] && modified_cmd+=("--noconfirm")
                 fi
                 
                 if "${modified_cmd[@]}"; then
