@@ -14,7 +14,7 @@ AMD_SERVICES=(
 )
 
 BLUETOOTH_SERVICES=(
-	"bluetooth.service" # Bluetooth stack (optional for desktop systems)
+	"bluetooth.service" # Bluetooth stack
 )
 
 SERVICES_TO_DISABLE=(
@@ -82,6 +82,38 @@ mask_service() {
 	fi
 }
 
+# Helper function to safely update configuration files
+update_config_setting() {
+	local config_file="$1"
+	local section="$2"
+	local key="$3"
+	local value="$4"
+	local comment="${5:-}"
+
+	if [[ ! -f "$config_file" ]]; then
+		gum_style --foreground="#ff5555" "Config file $config_file not found"
+		return 1
+	fi
+
+	# Check if setting already exists
+	if grep -q "^${key}=" "$config_file" 2>/dev/null; then
+		gum_style --foreground="#50fa7b" "✓ $key already configured in $config_file"
+		return 0
+	fi
+
+	# Add setting under the specified section
+	if [[ -n "$comment" ]]; then
+		sudo sed -i "/^\[${section}\]/a\\
+# ${comment}\\
+${key}=${value}" "$config_file"
+	else
+		sudo sed -i "/^\[${section}\]/a\\
+${key}=${value}" "$config_file"
+	fi
+
+	gum_style --foreground="#8be9fd" "✓ Added $key=$value to $config_file"
+}
+
 detect_hardware() {
 	local cpu_vendor=""
 	local has_bluetooth=false
@@ -127,7 +159,7 @@ install_performance_packages() {
 }
 
 configure_systemd_resolved() {
-	gum_style --foreground="#f1fa8c" "Configuring systemd-resolved for better DNS performance..."
+	gum_style --foreground="#f1fa8c" "Checking systemd-resolved configuration..."
 
 	local resolved_conf="/etc/systemd/resolved.conf"
 
@@ -135,22 +167,15 @@ configure_systemd_resolved() {
 		# Backup original configuration
 		execute sudo cp "$resolved_conf" "$resolved_conf.backup"
 
-		sudo tee "$resolved_conf" >/dev/null <<'EOF'
-[Resolve]
-# Use Cloudflare and Quad9 DNS for fast, secure resolution
-DNS=1.1.1.1 9.9.9.9 1.0.0.1 149.112.112.112
-FallbackDNS=8.8.8.8 8.8.4.4
-Domains=~.
-DNSSEC=yes
-DNSOverTLS=opportunistic
-Cache=yes
-CacheFromLocalhost=no
-# Reduce DNS timeout for faster failure detection
-ReadEtcHosts=yes
-ResolveUnicastSingleLabel=no
-EOF
+		update_config_setting "$resolved_conf" "Resolve" "DNS" "1.1.1.1 9.9.9.9" "Fast, secure DNS servers"
+		update_config_setting "$resolved_conf" "Resolve" "FallbackDNS" "8.8.8.8 8.8.4.4"
+		update_config_setting "$resolved_conf" "Resolve" "DNSSEC" "yes"
+		update_config_setting "$resolved_conf" "Resolve" "DNSOverTLS" "opportunistic"
+		update_config_setting "$resolved_conf" "Resolve" "Cache" "yes"
 
-		gum_style --foreground="#8be9fd" "DNS configuration optimized"
+		gum_style --foreground="#8be9fd" "DNS optimizations applied"
+	else
+		gum_style --foreground="#ffb86c" "No resolved.conf found, skipping DNS configuration"
 	fi
 }
 
@@ -163,30 +188,21 @@ optimize_journal_settings() {
 		# Backup original configuration
 		execute sudo cp "$journal_conf" "$journal_conf.backup"
 
-		# Create optimized journal configuration
-		sudo tee "$journal_conf" >/dev/null <<'EOF'
-[Journal]
-# Optimize journal for performance and reasonable storage
-Storage=persistent
-Compress=yes
-Seal=yes
-SplitMode=uid
-SyncIntervalSec=5m
-RateLimitInterval=30s
-RateLimitBurst=10000
-# Limit journal size (1GB max, 100MB max per file)
-SystemMaxUse=1G
-SystemMaxFileSize=100M
-RuntimeMaxUse=100M
-MaxRetentionSec=1month
-MaxFileSec=1week
-ForwardToWall=no
-EOF
+		update_config_setting "$journal_conf" "Journal" "Storage" "persistent" "Optimize journal for performance and reasonable storage"
+		update_config_setting "$journal_conf" "Journal" "Compress" "yes"
+		update_config_setting "$journal_conf" "Journal" "SyncIntervalSec" "5m" "Reduce sync frequency for better performance"
+		update_config_setting "$journal_conf" "Journal" "SystemMaxUse" "1G" "Limit journal size (1GB max)"
+		update_config_setting "$journal_conf" "Journal" "SystemMaxFileSize" "100M"
+		update_config_setting "$journal_conf" "Journal" "RuntimeMaxUse" "100M"
+		update_config_setting "$journal_conf" "Journal" "MaxRetentionSec" "1month"
+		update_config_setting "$journal_conf" "Journal" "ForwardToWall" "no"
 
 		gum_style --foreground="#8be9fd" "Journal configuration optimized"
 
 		# Restart journal service to apply changes
 		execute sudo systemctl restart systemd-journald
+	else
+		gum_style --foreground="#ffb86c" "No journald.conf found, skipping journal optimization"
 	fi
 }
 
