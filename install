@@ -13,14 +13,18 @@ source "$CHRONOS_PATH/lib/functions.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/system-update.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/enable-multilib.sh"
 
-gum_style --foreground="#ff79c6" --bold --italic --width=58 --align="center" \
-	"Installation complete! Rebooting in 5 seconds... Press any key to cancel."
+gum_style --foreground="#ff79c6" "Installation complete! Rebooting in 5 seconds..."
 
-read -t 5 -n 1 key
-if [[ $key ]]; then
-    gum_style --foreground="#50fa7b" --bold --italic --width=58 --align="center" \
-		"Reboot canceled."
-    exit 0
-fi
-sleep 5
-sudo reboot now
+# Countdown with cancellation option
+for i in {5..1}; do
+    echo -n "Rebooting in $i seconds... (Press Ctrl+C to cancel) "
+    if read -t 1 -n 1; then
+        echo
+        gum_style --foreground="#50fa7b" "Reboot canceled."
+        exit 0
+    fi
+    echo
+done
+
+gum_style --foreground="#ff79c6" "Rebooting now..."
+sudo reboot
