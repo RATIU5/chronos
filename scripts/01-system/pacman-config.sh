@@ -14,18 +14,18 @@ main() {
     # Backup original pacman.conf
     execute backup_pacman_config
 
+    # CRITICAL: Setup fast mirrors FIRST to avoid connection issues
+    execute setup_reflector
+
     # Configure pacman optimizations
     execute configure_pacman_performance
-    
-    # Install and configure reflector for mirror optimization
-    execute setup_reflector
-    
+
     # Install aria2 for faster downloads
     execute install_aria2
-    
+
     # Configure CachyOS repositories
     execute setup_cachyos_repos
-    
+
     # Update pacman database
     execute update_pacman_database
 
@@ -161,19 +161,39 @@ install_aria2() {
 
 setup_reflector() {
     gum_style --foreground="#f1fa8c" "Installing reflector for mirror optimization..."
-    
+
+    # First refresh the package database with current mirrors
+    sudo pacman -Sy
+
     sudo pacman -S --needed --noconfirm reflector
-    
+
     gum_style --foreground="#f1fa8c" "Generating optimized mirror list..."
-    
-    # Generate fast mirrors for US (Utah location)
-    sudo reflector \
-        --country 'United States' \
-        --age 12 \
-        --protocol https \
-        --sort rate \
-        --fastest 10 \
-        --save /etc/pacman.d/mirrorlist
+
+    # Generate fast mirrors with retry logic
+    local attempts=0
+    local max_attempts=3
+
+    while [[ $attempts -lt $max_attempts ]]; do
+        if sudo reflector \
+            --country 'United States' \
+            --age 12 \
+            --protocol https \
+            --sort rate \
+            --fastest 10 \
+            --save /etc/pacman.d/mirrorlist; then
+
+            gum_style --foreground="#50fa7b" "Mirror list optimized successfully"
+            break
+        else
+            ((attempts++))
+            if [[ $attempts -lt $max_attempts ]]; then
+                gum_style --foreground="#ffb86c" "Mirror update failed, retrying... ($attempts/$max_attempts)"
+                sleep 5
+            else
+                gum_style --foreground="#ff5555" "Mirror update failed after $max_attempts attempts, continuing with existing mirrors"
+            fi
+        fi
+    done
     
     gum_style --foreground="#f1fa8c" "Setting up reflector timer for automatic updates..."
     
