@@ -11,6 +11,9 @@ cat <<EOF
 
 EOF
 
+CHRONOS_GITHUB_USERNAME=${CHRONOS_GITHUB_USERNAME:-""}
+CHRONOS_GITHUB_EMAIL=${CHRONOS_GITHUB_EMAIL:-""}
+
 gum_style --foreground="#ff5555" --bold --italic --width=58 --align="center" \
 	"Let's begin. First we have a few questions for you."	
 
