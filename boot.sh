@@ -48,4 +48,6 @@ if [[ $CHRONOS_REF != "main" ]]; then
   cd -
 fi
 
-source ~/.local/share/chronos/install.sh
+chmod +x ~/.local/share/chronos/install
+
+source ~/.local/share/chronos/install
