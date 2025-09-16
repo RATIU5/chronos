@@ -14,10 +14,23 @@ source "$CHRONOS_PATH/scripts/00-prerequisites/system-update.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/enable-multilib.sh"
 
 gum_style --foreground="#ff79c6" "Installation complete! Rebooting in 5 seconds..."
-echo "Press any key to cancel..."
+gum_style --foreground="#f1fa8c" "Press any key to cancel..."
 
-# Use timeout command with read for reliable cancellation
-if timeout 5 bash -c 'read -n 1'; then
+# Countdown with proper input handling
+canceled=false
+for i in {5..1}; do
+    echo -ne "\rRebooting in $i seconds... "
+
+    # Check for input without blocking
+    if read -t 1 -n 1 -s 2>/dev/null; then
+        canceled=true
+        break
+    fi
+done
+
+echo # New line after countdown
+
+if [[ "$canceled" == "true" ]]; then
     gum_style --foreground="#50fa7b" "Reboot canceled."
     exit 0
 else
