@@ -31,16 +31,16 @@ test_gum_binary() {
 # Find gum binary in chronos project directory
 find_local_gum() {
     local local_gum
-    local_gum="$CHRONOS_PATH/vendor/gum"
-    
+    local_gum="$CHRONOS_PATH/vendors/gum/gum"
+
     if test_gum_binary "$local_gum"; then
         echo "$local_gum"
         return 0
     fi
-    
+
     [[ "${CHRONOS_VERBOSE:-false}" == "true" ]] && \
         echo "Local gum binary not found at $local_gum" >&2
-    
+
     return 1
 }
 
@@ -114,15 +114,19 @@ download_gum_binary() {
         return 1
     fi
     
-    # Move gum binary to rice bin directory
-    local extracted_gum="${tmp_dir}/gum"
-    local target_gum="${bin_dir}/gum"
-    
-    if [[ -f "$extracted_gum" ]]; then
+    # Find gum binary in extracted files
+    local extracted_gum target_gum="${bin_dir}/gum"
+
+    # Look for gum binary in extraction directory and subdirectories
+    extracted_gum=$(find "$tmp_dir" -name "gum" -type f -executable 2>/dev/null | head -1)
+
+    if [[ -n "$extracted_gum" && -f "$extracted_gum" ]]; then
         cp "$extracted_gum" "$target_gum"
         chmod +x "$target_gum"
     else
-        echo "Error: Extracted gum binary not found" >&2
+        echo "Error: Extracted gum binary not found in archive" >&2
+        echo "Contents of extraction directory:" >&2
+        ls -la "$tmp_dir" >&2
         return 1
     fi
     
