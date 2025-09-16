@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-execute pacman -Syu --noconfirm
+execute sudo pacman -Syu --noconfirm
