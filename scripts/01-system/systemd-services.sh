@@ -262,7 +262,7 @@ main() {
 		fi
 	done
 
-	log_info "Systemd service optimization completed successfully"
+	echo "Systemd service optimization completed successfully"
 }
 
 main "$@"
