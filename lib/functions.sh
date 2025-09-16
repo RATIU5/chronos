@@ -311,7 +311,3 @@ execute_with_spinner() {
         return $result
     fi
 }
-
-alias showfun=show_function
-alias xs=execute_silent
-alias x=execute

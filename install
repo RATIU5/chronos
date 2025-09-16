@@ -4,10 +4,12 @@ set -euo pipefail
 
 export CHRONOS_PATH="${CHRONOS_PATH:-$HOME/.local/share/chronos}"
 
-source "$CHRONOS_PATH/lib/functions.sh"
 
 source "$CHRONOS_PATH/scripts/00-prerequisites/gum-install.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/set-variables.sh"
+
+source "$CHRONOS_PATH/lib/functions.sh"
+
 source "$CHRONOS_PATH/scripts/00-prerequisites/system-update.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/enable-multilib.sh"
 
