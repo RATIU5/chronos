@@ -102,8 +102,13 @@ EOF
 	local core_line=$(grep -n "^\[core\]" /etc/pacman.conf | head -1 | cut -d: -f1)
 	
 	if [ -n "$core_line" ]; then
-		# Insert before [core]
-		execute sudo sed -i "${core_line}i\\$(cat "$temp_conf")" /etc/pacman.conf
+		# Create a new pacman.conf with repositories inserted before [core]
+		local new_conf="/tmp/new_pacman.conf"
+		head -n $((core_line - 1)) /etc/pacman.conf > "$new_conf"
+		cat "$temp_conf" >> "$new_conf"
+		tail -n +${core_line} /etc/pacman.conf >> "$new_conf"
+		execute sudo cp "$new_conf" /etc/pacman.conf
+		rm -f "$new_conf"
 	else
 		# If [core] not found, append to end
 		execute sudo bash -c "cat '$temp_conf' >> /etc/pacman.conf"
