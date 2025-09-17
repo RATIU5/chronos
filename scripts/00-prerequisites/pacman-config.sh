@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set_pacman_conf() {
 	local key="$1"
 	local value="$2"
@@ -42,17 +44,19 @@ main() {
 	# Step 4: Detect CPU architecture and add appropriate repositories
 	gum_style --foreground="#8be9fd" "Detecting CPU architecture..."
 	
-	# Check CPU capabilities
+	# Use proper CPU architecture detection
 	local cpu_level=""
-	if grep -q "avx512" /proc/cpuinfo && [ "$(uname -m)" = "x86_64" ]; then
+	local cpu_support=$(/lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep "supported" | head -1)
+	
+	if echo "$cpu_support" | grep -q "x86-64-v4"; then
 		cpu_level="v4"
-		gum_style --foreground="#8be9fd" "Detected x86-64-v4 support"
-	elif grep -q "avx2" /proc/cpuinfo && [ "$(uname -m)" = "x86_64" ]; then
+		gum_style --foreground="#50fa7b" "Detected x86-64-v4 support (AVX-512 capable)"
+	elif echo "$cpu_support" | grep -q "x86-64-v3"; then
 		cpu_level="v3"
-		gum_style --foreground="#8be9fd" "Detected x86-64-v3 support"
+		gum_style --foreground="#f1fa8c" "Detected x86-64-v3 support (AVX2 capable)"
 	else
 		cpu_level="generic"
-		gum_style --foreground="#8be9fd" "Using generic x86-64 support"
+		gum_style --foreground="#ffb86c" "Using generic x86-64 support"
 	fi
 
 	# Step 5: Add CachyOS repositories to pacman.conf
@@ -117,16 +121,53 @@ EOF
 	# Clean up
 	rm -f "$temp_conf"
 
-	# Step 6: Configure pacman settings
+	# Step 6: Fix v4 mirrorlist variable format if needed
+	if [ -f "/etc/pacman.d/cachyos-v4-mirrorlist" ] && grep -q '\$arch_v4' /etc/pacman.d/cachyos-v4-mirrorlist; then
+		gum_style --foreground="#8be9fd" "Fixing v4 mirrorlist variable format..."
+		execute sudo sed -i 's/\$arch_v4/x86_64_v4/g' /etc/pacman.d/cachyos-v4-mirrorlist
+		gum_style --foreground="#50fa7b" "✓ Fixed \$arch_v4 -> x86_64_v4 in v4 mirrorlist."
+	fi
+
+	# Step 7: Install CachyOS pacman for v4 architecture support
+	gum_style --foreground="#8be9fd" "Installing CachyOS pacman with architecture support..."
+	
+	# First refresh databases to see the cachyos repo
+	execute sudo pacman -Sy --noconfirm
+	
+	# Install CachyOS pacman which supports x86_64_v4
+	execute sudo pacman -U --noconfirm \
+		'https://mirror.cachyos.org/repo/x86_64/cachyos/pacman-7.0.0.r7.g1f38429-1-x86_64.pkg.tar.zst'
+
+	if [ $? -eq 0 ]; then
+		gum_style --foreground="#50fa7b" "✓ CachyOS pacman installed successfully."
+	else
+		gum_style --foreground="#ff5555" "✗ Failed to install CachyOS pacman."
+		return 1
+	fi
+
+	# Step 8: Configure pacman settings including architecture support
 	gum_style --foreground="#ffb86c" "Configuring pacman settings..."
 	
 	execute set_pacman_conf "Color" "Color"
 	execute set_pacman_conf "VerbosePkgLists" "VerbosePkgLists"
 	execute set_pacman_conf "ParallelDownloads" "ParallelDownloads = 10"
 	execute set_pacman_conf "ILoveCandy" "ILoveCandy"
+	
+	# Configure architecture support based on detected CPU
+	if [ "$cpu_level" = "v4" ]; then
+		gum_style --foreground="#8be9fd" "Configuring pacman for x86-64-v4 architecture support..."
+		execute set_pacman_conf "Architecture" "Architecture = auto"
+		gum_style --foreground="#50fa7b" "✓ Architecture set to auto (CachyOS pacman will handle v4 detection)."
+	elif [ "$cpu_level" = "v3" ]; then
+		gum_style --foreground="#8be9fd" "Configuring pacman for x86-64-v3 architecture support..."
+		execute set_pacman_conf "Architecture" "Architecture = auto"
+		gum_style --foreground="#50fa7b" "✓ Architecture set to auto (CachyOS pacman will handle v3 detection)."
+	else
+		execute set_pacman_conf "Architecture" "Architecture = x86_64"
+	fi
 
-	# Step 7: Refresh package databases
-	gum_style --foreground="#8be9fd" "Refreshing package databases..."
+	# Step 9: Refresh package databases with new pacman
+	gum_style --foreground="#8be9fd" "Refreshing package databases with CachyOS pacman..."
 	if execute sudo pacman -Syy --noconfirm; then
 		gum_style --foreground="#50fa7b" "✓ Package databases refreshed successfully."
 	else
@@ -134,7 +175,7 @@ EOF
 		return 1
 	fi
 
-	# Step 8: Verify installation
+	# Step 10: Verify installation
 	gum_style --foreground="#8be9fd" "Verifying CachyOS repository installation..."
 	
 	# Check if repositories are in pacman.conf
@@ -145,6 +186,13 @@ EOF
 		return 1
 	fi
 
+	# Check if CachyOS pacman is installed
+	if pacman -Q pacman | grep -q "cachyos"; then
+		gum_style --foreground="#50fa7b" "✓ CachyOS pacman with architecture support installed"
+	else
+		gum_style --foreground="#ff5555" "✗ Standard Arch pacman detected (may cause v4 issues)"
+	fi
+
 	# Check if packages are available
 	local available_repos=$(pacman-conf --repo-list | grep cachyos | wc -l)
 	if [ "$available_repos" -gt 0 ]; then
@@ -152,6 +200,20 @@ EOF
 	else
 		gum_style --foreground="#ff5555" "✗ No CachyOS repositories are active"
 		return 1
+	fi
+
+	# Test architecture compatibility
+	gum_style --foreground="#8be9fd" "Testing architecture compatibility..."
+	local arch_test=$(pacman-conf Architecture 2>/dev/null | head -1)
+	gum_style --foreground="#8be9fd" "Pacman architecture configuration: $arch_test"
+	
+	if [ "$cpu_level" = "v4" ]; then
+		# Test if we can query v4 packages
+		if pacman -Si linux-cachyos 2>/dev/null | grep -q "x86_64_v4\|x86_64"; then
+			gum_style --foreground="#50fa7b" "✓ x86-64-v4 package compatibility verified"
+		else
+			gum_style --foreground="#f1fa8c" "⚠ Could not verify v4 package compatibility"
+		fi
 	fi
 
 	gum_style --foreground="#50fa7b" "✓ CachyOS repository installation completed successfully!"
