@@ -4,18 +4,13 @@ set -euo pipefail
 
 export CHRONOS_PATH="${CHRONOS_PATH:-$HOME/.local/share/chronos}"
 
+source "$CHRONOS_PATH/lib/functions.sh"
 
 source "$CHRONOS_PATH/scripts/00-prerequisites/gum-install.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/set-variables.sh"
-
-source "$CHRONOS_PATH/lib/functions.sh"
-
 source "$CHRONOS_PATH/scripts/00-prerequisites/system-update.sh"
-source "$CHRONOS_PATH/scripts/00-prerequisites/enable-multilib.sh"
+source "$CHRONOS_PATH/scripts/00-prerequisites/pacman-config.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/base-packages.sh"
-
-source "$CHRONOS_PATH/scripts/01-system/systemd-services.sh"
-source "$CHRONOS_PATH/scripts/01-system/pacman-config.sh"
 
 gum_style --foreground="#50fa7b" "Installation complete!"
 echo
