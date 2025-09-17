@@ -20,6 +20,32 @@ fix_repository_config() {
 		execute sudo sed -i '/^\[cachyos-extra-v4\]/,/^$/d' /etc/pacman.conf
 	fi
 	
+	# Fix v4 mirrorlist variable format
+	if [ -f "/etc/pacman.d/cachyos-v4-mirrorlist" ] && grep -q '\$arch_v4' /etc/pacman.d/cachyos-v4-mirrorlist; then
+		gum_style --foreground="#8be9fd" "Fixing v4 mirrorlist variable format..."
+		execute sudo sed -i 's/\$arch_v4/x86_64_v4/g' /etc/pacman.d/cachyos-v4-mirrorlist
+		gum_style --foreground="#50fa7b" "✓ Fixed \$arch_v4 -> x86_64_v4 in v4 mirrorlist."
+	fi
+	
+	# Remove non-existent cachyos-extra-v4 repository
+	if grep -q "\[cachyos-extra-v4\]" /etc/pacman.conf; then
+		gum_style --foreground="#8be9fd" "Removing non-existent cachyos-extra-v4 repository..."
+		execute sudo sed -i '/^\[cachyos-extra-v4\]/,/^$/d' /etc/pacman.conf
+		
+		# Add cachyos-extra-v3 as fallback if not present
+		if ! grep -q "\[cachyos-extra-v3\]" /etc/pacman.conf; then
+			gum_style --foreground="#8be9fd" "Adding cachyos-extra-v3 as fallback..."
+			# Insert after cachyos-core-v4 or cachyos-core-v3
+			if grep -q "\[cachyos-core-v4\]" /etc/pacman.conf; then
+				execute sudo sed -i '/^\[cachyos-core-v4\]/,/^$/{/^$/a\\n[cachyos-extra-v3]\nInclude = /etc/pacman.d/cachyos-v3-mirrorlist
+}' /etc/pacman.conf
+			elif grep -q "\[cachyos-core-v3\]" /etc/pacman.conf; then
+				execute sudo sed -i '/^\[cachyos-core-v3\]/,/^$/{/^$/a\\n[cachyos-extra-v3]\nInclude = /etc/pacman.d/cachyos-v3-mirrorlist
+}' /etc/pacman.conf
+			fi
+		fi
+	fi
+	
 	# Fix repository format issues
 	gum_style --foreground="#8be9fd" "Fixing repository format..."
 	execute sudo sed -i 's/cachyos-extra-v3/cachyos-extra-v3/g' /etc/pacman.conf
@@ -385,6 +411,14 @@ main() {
 	
 	if grep -q "cachyos-extra-v[34]" /etc/pacman.conf; then
 		config_issues+=("Incorrect repository format: should be 'cachyos-core-v*' and 'cachyos-extra-v*'")
+	fi
+	
+	# Check if cachyos-extra-v4 exists (common issue)
+	if grep -q "\[cachyos-extra-v4\]" /etc/pacman.conf; then
+		gum_style --foreground="#8be9fd" "Checking v4 mirrorlist format..."
+		if grep -q '\$arch_v4' /etc/pacman.d/cachyos-v4-mirrorlist 2>/dev/null; then
+			config_issues+=("v4 mirrorlist uses incorrect variable format (\$arch_v4 instead of x86_64_v4)")
+		fi
 	fi
 	
 	if [ ${#config_issues[@]} -gt 0 ]; then
