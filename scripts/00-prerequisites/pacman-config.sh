@@ -60,6 +60,8 @@ main() {
 	execute set_pacman_conf "VerbosePkgLists" "VerbosePkgLists"
 	execute set_pacman_conf "ParallelDownloads" "ParallelDownloads = 10"
 	execute set_pacman_conf "ILoveCandy" "ILoveCandy"
+	
+	execute sudo pacman -Sy --noconfirm
 
 	gum_style --foreground="#50fa7b" "✓ Pacman configured successfully."
 }
