@@ -149,19 +149,12 @@ EOF
 	local available_repos=$(pacman-conf --repo-list | grep cachyos | wc -l)
 	if [ "$available_repos" -gt 0 ]; then
 		gum_style --foreground="#50fa7b" "✓ Found $available_repos CachyOS repositories active"
-		
-		# Show some example packages
-		local sample_packages=$(pacman -Sl | grep cachyos | head -3 | awk '{print $2}' | tr '\n' ' ')
-		if [ -n "$sample_packages" ]; then
-			gum_style --foreground="#8be9fd" "Sample CachyOS packages: $sample_packages"
-		fi
 	else
 		gum_style --foreground="#ff5555" "✗ No CachyOS repositories are active"
 		return 1
 	fi
 
 	gum_style --foreground="#50fa7b" "✓ CachyOS repository installation completed successfully!"
-	gum_style --foreground="#8be9fd" "Your CPU architecture level: $cpu_level"
 }
 
 main
