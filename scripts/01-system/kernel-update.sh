@@ -37,17 +37,21 @@ detect_current_setup() {
 show_kernel_options() {
 	gum_style --foreground="#ffb86c" "Available CachyOS kernel variants:"
 	echo
-	gum_table --columns "Option,Package,Description,Scheduler" \
-		--widths "8,25,50,15" \
+	
+	# Create table data and pipe to gum table
+	{
+		echo "Option,Package,Description,Scheduler"
+		echo "1,linux-cachyos,Default CachyOS kernel - recommended for most users,BORE"
+		echo "2,linux-cachyos-lto,High-performance with Clang+ThinLTO and AutoFDO profiling,BORE"
+		echo "3,linux-cachyos-bore,BORE scheduler specific variant,BORE"
+		echo "4,linux-cachyos-bmq,BMQ scheduler from Project C (no sched-ext support),BMQ"
+		echo "5,linux-cachyos-lts,Long Term Support version for maximum stability,BORE"
+		echo "6,linux-cachyos-hardened,Security-focused with aggressive hardening patches,BORE"
+		echo "7,linux-cachyos-rt,Real-time preemption kernel (not for gaming),BORE"
+	} | gum_table --widths "8,25,50,15" \
 		--header.foreground "#50fa7b" \
 		--cell.foreground "#f8f8f2" \
-		"1,linux-cachyos,Default CachyOS kernel - recommended for most users,BORE" \
-		"2,linux-cachyos-lto,High-performance with Clang+ThinLTO and AutoFDO profiling,BORE" \
-		"3,linux-cachyos-bore,BORE scheduler specific variant,BORE" \
-		"4,linux-cachyos-bmq,BMQ scheduler from Project C (no sched-ext support),BMQ" \
-		"5,linux-cachyos-lts,Long Term Support version for maximum stability,BORE" \
-		"6,linux-cachyos-hardened,Security-focused with aggressive hardening patches,BORE" \
-		"7,linux-cachyos-rt,Real-time preemption kernel (not for gaming),BORE"
+		--print
 }
 
 # Function to install selected kernel
@@ -209,8 +213,8 @@ cleanup_old_kernels() {
 		if [ -s /tmp/kernels_list.txt ]; then
 			gum_table --columns "Package,Version" \
 				--widths "30,20" \
-				--header.foreground "#50fa7b" \
-				--cell.foreground "#f8f8f2" \
+				--header-foreground "#50fa7b" \
+				--cell-foreground "#f8f8f2" \
 				$(awk '{print $1 "," $2}' /tmp/kernels_list.txt)
 		fi
 		rm -f /tmp/kernels_list.txt
@@ -263,7 +267,7 @@ NEXT STEPS:
 • Join the CachyOS community for support and updates
 EOF
 
-	gum_pager --style="border,bold" < /tmp/post_install_info.txt
+	gum_pager --style.border="rounded" --style.border.foreground="#bd93f9" < /tmp/post_install_info.txt
 	rm -f /tmp/post_install_info.txt
 	echo
 	
