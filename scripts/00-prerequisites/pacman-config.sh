@@ -44,12 +44,14 @@ main() {
 			return 1
 	fi
 
-	# Fix the keyserver in the script and add --noconfirm to pacman commands
+	# Fix the keyserver in the script and add --noconfirm to pacman commands more precisely
 	execute sed -i 's/pacman-key --recv-keys F3B607488DB35A47.*/# pacman-key --recv-keys F3B607488DB35A47 # Key already imported/' "$temp_dir/cachyos-repo/cachyos-repo.sh"
-	execute sed -i 's/pacman -S /pacman -S --noconfirm /g' "$temp_dir/cachyos-repo/cachyos-repo.sh"
-	execute sed -i 's/pacman -Sy/pacman -Sy --noconfirm/g' "$temp_dir/cachyos-repo/cachyos-repo.sh"
 
-	# Run the modified script with automatic confirmation
+	# Add --noconfirm only to specific pacman commands, avoiding duplication
+	execute sed -i '/pacman -S[^-]/s/pacman -S/pacman -S --noconfirm/' "$temp_dir/cachyos-repo/cachyos-repo.sh"
+	execute sed -i '/pacman -Sy[^-]/s/pacman -Sy/pacman -Sy --noconfirm/' "$temp_dir/cachyos-repo/cachyos-repo.sh"
+
+	# Run the modified script with automatic confirmation as backup
 	gum_style --foreground="#8be9fd" "Running CachyOS repository installation script..."
 	execute bash -c "yes | sudo '$temp_dir/cachyos-repo/cachyos-repo.sh'"
 
