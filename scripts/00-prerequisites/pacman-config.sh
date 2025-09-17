@@ -70,7 +70,7 @@ main() {
 
 	# Run the modified script
 	gum_style --foreground="#8be9fd" "Running CachyOS repository installation script..."
-	execute sudo "$temp_dir/cachyos-repo/cachyos-repo.sh"
+	execute bash -c 'echo "Y" | sudo "$temp_dir/cachyos-repo/cachyos-repo.sh"'
 
 	gum_style --foreground="#50fa7b" "✓ CachyOS repository added."
 
