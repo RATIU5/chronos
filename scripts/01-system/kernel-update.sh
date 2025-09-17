@@ -300,10 +300,22 @@ main() {
 	# Check mirror performance and offer to rate mirrors
 	gum_style --foreground="#8be9fd" "Checking mirror performance..."
 	if gum_confirm --default=true "Would you like to rate mirrors for optimal download speeds?"; then
-		gum_style --foreground="#8be9fd" "Rating mirrors for best performance..."
-		gum_spin --spinner dot --title "Finding fastest mirrors..." -- sudo cachyos-rate-mirrors
-		if [ $? -eq 0 ]; then
-			gum_style --foreground="#50fa7b" "✓ Mirrors updated successfully."
+		gum_style --foreground="#8be9fd" "Installing rate-mirrors if needed..."
+		execute sudo pacman -S --needed --noconfirm rate-mirrors
+		
+		gum_style --foreground="#8be9fd" "Rating CachyOS mirrors for best performance..."
+		if gum_spin --spinner dot --title "Finding fastest CachyOS mirrors..." -- bash -c "rate-mirrors cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist > /dev/null"; then
+			gum_style --foreground="#50fa7b" "✓ CachyOS mirrors updated successfully."
+			
+			# Copy to v3/v4 mirrorlists if they exist
+			if [ -f "/etc/pacman.d/cachyos-v3-mirrorlist" ]; then
+				execute sudo cp /etc/pacman.d/cachyos-mirrorlist /etc/pacman.d/cachyos-v3-mirrorlist
+				gum_style --foreground="#50fa7b" "✓ Updated cachyos-v3-mirrorlist."
+			fi
+			if [ -f "/etc/pacman.d/cachyos-v4-mirrorlist" ]; then
+				execute sudo cp /etc/pacman.d/cachyos-mirrorlist /etc/pacman.d/cachyos-v4-mirrorlist
+				gum_style --foreground="#50fa7b" "✓ Updated cachyos-v4-mirrorlist."
+			fi
 		else
 			gum_style --foreground="#ff5555" "✗ Mirror rating failed, continuing with current mirrors."
 		fi
