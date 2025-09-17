@@ -17,7 +17,7 @@ main() {
     trap 'rm -rf -- "$temp_dir"' EXIT
 		
 		# Import the GPG key for the CachyOS repository
-		execute gpg --keyserver keyserver.ubuntu.com --recv-keys F3B607488DB35A47
+		execute gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F3B607488DB35A47
     execute curl -L https://mirror.cachyos.org/cachyos-repo.tar.xz -o "$temp_dir/cachyos-repo.tar.xz"
     execute bash -c "tar xvf $temp_dir/cachyos-repo.tar.xz -C $temp_dir && sudo $temp_dir/cachyos-repo/cachyos-repo.sh"
     gum_style --foreground="#50fa7b" "✓ CachyOS repository added."
