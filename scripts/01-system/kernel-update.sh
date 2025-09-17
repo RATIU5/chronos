@@ -3,7 +3,70 @@
 # CachyOS Kernel Installation Script
 # This script installs the CachyOS optimized kernel with various options
 
-# Function to detect current kernel and bootloader
+# Function to fix repository configuration
+fix_repository_config() {
+	local target_arch="$1"
+	
+	gum_style --foreground="#8be9fd" "Fixing repository configuration..."
+	
+	# Backup current pacman.conf
+	execute sudo cp /etc/pacman.conf /etc/pacman.conf.backup-$(date +%Y%m%d-%H%M%S)
+	
+	# Remove problematic v4 repositories if CPU doesn't support them
+	if [ "$target_arch" != "v4" ]; then
+		gum_style --foreground="#8be9fd" "Removing v4 repositories (CPU doesn't support x86-64-v4)..."
+		execute sudo sed -i '/^\[cachyos-v4\]/,/^$/d' /etc/pacman.conf
+		execute sudo sed -i '/^\[cachyos-core-v4\]/,/^$/d' /etc/pacman.conf
+		execute sudo sed -i '/^\[cachyos-extra-v4\]/,/^$/d' /etc/pacman.conf
+	fi
+	
+	# Fix repository format issues
+	gum_style --foreground="#8be9fd" "Fixing repository format..."
+	execute sudo sed -i 's/cachyos-extra-v3/cachyos-extra-v3/g' /etc/pacman.conf
+	execute sudo sed -i 's/cachyos-extra-v4/cachyos-extra-v4/g' /etc/pacman.conf
+	
+	# Add correct repositories based on CPU support
+	if [ "$target_arch" = "v3" ] && ! grep -q "\[cachyos-v3\]" /etc/pacman.conf; then
+		gum_style --foreground="#8be9fd" "Adding v3 repositories..."
+		
+		# Find the line number of the first [core] repository
+		local core_line=$(grep -n "^\[core\]" /etc/pacman.conf | head -1 | cut -d: -f1)
+		
+		if [ -n "$core_line" ]; then
+			local temp_conf="/tmp/cachyos_repos.conf"
+			cat > "$temp_conf" << 'EOF'
+
+# CachyOS v3 repositories
+[cachyos-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-core-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-extra-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos]
+Include = /etc/pacman.d/cachyos-mirrorlist
+
+EOF
+			
+			# Insert repositories before [core]
+			local new_conf="/tmp/new_pacman.conf"
+			head -n $((core_line - 1)) /etc/pacman.conf > "$new_conf"
+			cat "$temp_conf" >> "$new_conf"
+			tail -n +${core_line} /etc/pacman.conf >> "$new_conf"
+			execute sudo cp "$new_conf" /etc/pacman.conf
+			rm -f "$new_conf" "$temp_conf"
+		fi
+	fi
+	
+	gum_style --foreground="#50fa7b" "✓ Repository configuration fixed."
+	
+	# Refresh package database
+	gum_style --foreground="#8be9fd" "Refreshing package database..."
+	execute sudo pacman -Sy
+}
 detect_current_setup() {
 	local current_kernel=$(uname -r)
 	local bootloader=""
@@ -295,6 +358,50 @@ main() {
 		return 1
 	fi
 	gum_style --foreground="#50fa7b" "✓ CachyOS repositories found."
+	echo
+	
+	# Detect CPU architecture support
+	gum_style --foreground="#8be9fd" "Detecting CPU architecture support..."
+	local cpu_support=$(/lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep "supported" | head -1)
+	if echo "$cpu_support" | grep -q "x86-64-v4"; then
+		gum_style --foreground="#50fa7b" "✓ CPU supports x86-64-v4 architecture."
+		local max_arch="v4"
+	elif echo "$cpu_support" | grep -q "x86-64-v3"; then
+		gum_style --foreground="#f1fa8c" "✓ CPU supports x86-64-v3 architecture."
+		local max_arch="v3"
+	else
+		gum_style --foreground="#ffb86c" "CPU supports generic x86-64 architecture."
+		local max_arch="generic"
+	fi
+	echo
+	
+	# Check repository configuration
+	gum_style --foreground="#8be9fd" "Checking repository configuration..."
+	local config_issues=()
+	
+	if grep -q "\[cachyos-v4\]" /etc/pacman.conf && [ "$max_arch" != "v4" ]; then
+		config_issues+=("Using v4 repositories but CPU doesn't support x86-64-v4")
+	fi
+	
+	if grep -q "cachyos-extra-v[34]" /etc/pacman.conf; then
+		config_issues+=("Incorrect repository format: should be 'cachyos-core-v*' and 'cachyos-extra-v*'")
+	fi
+	
+	if [ ${#config_issues[@]} -gt 0 ]; then
+		gum_style --foreground="#ff5555" "✗ Repository configuration issues found:"
+		for issue in "${config_issues[@]}"; do
+			echo "  • $issue"
+		done
+		echo
+		if gum_confirm --default=true "Would you like to fix repository configuration automatically?"; then
+			fix_repository_config "$max_arch"
+		else
+			gum_style --foreground="#f1fa8c" "Please fix /etc/pacman.conf manually before continuing."
+			return 1
+		fi
+	else
+		gum_style --foreground="#50fa7b" "✓ Repository configuration looks good."
+	fi
 	echo
 	
 	# Check mirror performance and offer to rate mirrors
