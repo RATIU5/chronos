@@ -12,6 +12,8 @@ set_pacman_conf() {
 main() {
 	gum_style --foreground="#ffb86c" "Adding CachyOS repository..."
 
+	gum_style --foreground="#ffb86c" "Adding CachyOS repository..."
+
 	local temp_dir
 	temp_dir=$(mktemp -d)
 	trap 'rm -rf -- "$temp_dir"' EXIT
@@ -20,16 +22,35 @@ main() {
 	gum_style --foreground="#8be9fd" "Importing CachyOS GPG key..."
 	execute gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F3B607488DB35A47
 
-	# Export the key from user keyring to pacman keyring
-	execute gpg --export F3B607488DB35A47 > "$temp_dir/cachyos.key"
-	execute sudo pacman-key --add "$temp_dir/cachyos.key"
+	# Verify the key was imported to user keyring
+	if ! gpg --list-keys F3B607488DB35A47 >/dev/null 2>&1; then
+			gum_style --foreground="#ff5555" "✗ Failed to import key to user keyring."
+			return 1
+	fi
+
+	# Export the key with proper error checking
+	gum_style --foreground="#8be9fd" "Exporting key to temporary file..."
+	if ! gpg --export --armor F3B607488DB35A47 > "$temp_dir/cachyos.key"; then
+			gum_style --foreground="#ff5555" "✗ Failed to export GPG key."
+			return 1
+	fi
+
+	# Check if the exported key file has content
+	if [[ ! -s "$temp_dir/cachyos.key" ]]; then
+			gum_style --foreground="#ff5555" "✗ Exported key file is empty."
+			return 1
+	fi
+
+	# Add key directly to pacman keyring using the working keyserver
+	gum_style --foreground="#8be9fd" "Adding key to pacman keyring..."
+	execute sudo pacman-key --recv-keys F3B607488DB35A47 --keyserver hkp://keyserver.ubuntu.com:80
 	execute sudo pacman-key --lsign-key F3B607488DB35A47
 
-	# Verify the key is properly installed
+	# Verify the key is properly installed in pacman keyring
 	if sudo pacman-key --list-keys | grep -q "F3B607488DB35A47"; then
 			gum_style --foreground="#50fa7b" "✓ CachyOS GPG key imported successfully."
 	else
-			gum_style --foreground="#ff5555" "✗ Failed to import CachyOS GPG key."
+			gum_style --foreground="#ff5555" "✗ Failed to import CachyOS GPG key to pacman keyring."
 			return 1
 	fi
 
