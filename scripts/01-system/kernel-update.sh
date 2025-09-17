@@ -39,8 +39,8 @@ show_kernel_options() {
 	echo
 	gum_table --columns "Option,Package,Description,Scheduler" \
 		--widths "8,25,50,15" \
-		--header-foreground "#50fa7b" \
-		--cell-foreground "#f8f8f2" \
+		--header.foreground "#50fa7b" \
+		--cell.foreground "#f8f8f2" \
 		"1,linux-cachyos,Default CachyOS kernel - recommended for most users,BORE" \
 		"2,linux-cachyos-lto,High-performance with Clang+ThinLTO and AutoFDO profiling,BORE" \
 		"3,linux-cachyos-bore,BORE scheduler specific variant,BORE" \
@@ -209,8 +209,8 @@ cleanup_old_kernels() {
 		if [ -s /tmp/kernels_list.txt ]; then
 			gum_table --columns "Package,Version" \
 				--widths "30,20" \
-				--header-foreground "#50fa7b" \
-				--cell-foreground "#f8f8f2" \
+				--header.foreground "#50fa7b" \
+				--cell.foreground "#f8f8f2" \
 				$(awk '{print $1 "," $2}' /tmp/kernels_list.txt)
 		fi
 		rm -f /tmp/kernels_list.txt
