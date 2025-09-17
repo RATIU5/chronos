@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# CachyOS Kernel Installation Script
+# This script installs the CachyOS optimized kernel with various options
+
 # Function to detect current kernel and bootloader
 detect_current_setup() {
 	local current_kernel=$(uname -r)
@@ -293,6 +296,19 @@ main() {
 	fi
 	gum_style --foreground="#50fa7b" "✓ CachyOS repositories found."
 	echo
+	
+	# Check mirror performance and offer to rate mirrors
+	gum_style --foreground="#8be9fd" "Checking mirror performance..."
+	if gum_confirm --default=true "Would you like to rate mirrors for optimal download speeds?"; then
+		gum_style --foreground="#8be9fd" "Rating mirrors for best performance..."
+		gum_spin --spinner dot --title "Finding fastest mirrors..." -- sudo cachyos-rate-mirrors
+		if [ $? -eq 0 ]; then
+			gum_style --foreground="#50fa7b" "✓ Mirrors updated successfully."
+		else
+			gum_style --foreground="#ff5555" "✗ Mirror rating failed, continuing with current mirrors."
+		fi
+		echo
+	fi
 	
 	# Detect current system setup
 	local bootloader=$(detect_current_setup)
