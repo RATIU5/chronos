@@ -12,8 +12,6 @@ set_pacman_conf() {
 main() {
 	gum_style --foreground="#ffb86c" "Adding CachyOS repository..."
 
-	gum_style --foreground="#ffb86c" "Adding CachyOS repository..."
-
 	local temp_dir
 	temp_dir=$(mktemp -d)
 	trap 'rm -rf -- "$temp_dir"' EXIT
@@ -21,25 +19,6 @@ main() {
 	# Import the GPG key for the CachyOS repository using the working method
 	gum_style --foreground="#8be9fd" "Importing CachyOS GPG key..."
 	execute gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F3B607488DB35A47
-
-	# Verify the key was imported to user keyring
-	if ! gpg --list-keys F3B607488DB35A47 >/dev/null 2>&1; then
-			gum_style --foreground="#ff5555" "✗ Failed to import key to user keyring."
-			return 1
-	fi
-
-	# Export the key with proper error checking
-	gum_style --foreground="#8be9fd" "Exporting key to temporary file..."
-	if ! gpg --export --armor F3B607488DB35A47 > "$temp_dir/cachyos.key"; then
-			gum_style --foreground="#ff5555" "✗ Failed to export GPG key."
-			return 1
-	fi
-
-	# Check if the exported key file has content
-	if [[ ! -s "$temp_dir/cachyos.key" ]]; then
-			gum_style --foreground="#ff5555" "✗ Exported key file is empty."
-			return 1
-	fi
 
 	# Add key directly to pacman keyring using the working keyserver
 	gum_style --foreground="#8be9fd" "Adding key to pacman keyring..."
@@ -65,12 +44,14 @@ main() {
 			return 1
 	fi
 
-	# Fix the keyserver in the script (or comment out key fetching since we already have it)
+	# Fix the keyserver in the script and add --noconfirm to pacman commands
 	execute sed -i 's/pacman-key --recv-keys F3B607488DB35A47.*/# pacman-key --recv-keys F3B607488DB35A47 # Key already imported/' "$temp_dir/cachyos-repo/cachyos-repo.sh"
+	execute sed -i 's/pacman -S /pacman -S --noconfirm /g' "$temp_dir/cachyos-repo/cachyos-repo.sh"
+	execute sed -i 's/pacman -Sy/pacman -Sy --noconfirm/g' "$temp_dir/cachyos-repo/cachyos-repo.sh"
 
-	# Run the modified script
+	# Run the modified script with automatic confirmation
 	gum_style --foreground="#8be9fd" "Running CachyOS repository installation script..."
-	execute bash -c 'echo "Y" | sudo "$temp_dir/cachyos-repo/cachyos-repo.sh"'
+	execute bash -c "yes | sudo '$temp_dir/cachyos-repo/cachyos-repo.sh'"
 
 	gum_style --foreground="#50fa7b" "✓ CachyOS repository added."
 
