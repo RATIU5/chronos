@@ -17,8 +17,8 @@ main() {
 	trap 'rm -rf -- "$temp_dir"' EXIT
 
 	# Import the GPG key for the CachyOS repository
-	execute curl -L -o cachyos-keyring-20240331-1-any.pkg.tar.zst https://mirror.cachyos.org/cachyos-keyring/cachyos-keyring-20240331-1-any.pkg.tar.zst
-	execute sudo pacman -U cachyos-keyring-20240331-1-any.pkg.tar.zst
+	execute curl -L -o cachyos-keyring-2-1-any.pkg.tar.zst https://mirror.cachyos.org/cachyos-keyring/cachyos-keyring-2-1-any.pkg.tar.zst
+	execute sudo pacman -U cachyos-keyring-2-1-any.pkg.tar.zst
 
 	# Download and extract the repo script
 	execute curl -L https://mirror.cachyos.org/cachyos-repo.tar.xz -o "$temp_dir/cachyos-repo.tar.xz"
