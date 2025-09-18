@@ -409,59 +409,15 @@ main() {
 		config_issues+=("Using v4 repositories but CPU doesn't support x86-64-v4")
 	fi
 	
-	if grep -q "cachyos-extra-v[34]" /etc/pacman.conf; then
-		config_issues+=("Incorrect repository format: should be 'cachyos-core-v*' and 'cachyos-extra-v*'")
-	fi
-	
-	# Check if cachyos-extra-v4 exists (common issue)
-	if grep -q "\[cachyos-extra-v4\]" /etc/pacman.conf; then
-		gum_style --foreground="#8be9fd" "Checking v4 mirrorlist format..."
-		if grep -q '\$arch_v4' /etc/pacman.d/cachyos-v4-mirrorlist 2>/dev/null; then
-			config_issues+=("v4 mirrorlist uses incorrect variable format (\$arch_v4 instead of x86_64_v4)")
-		fi
-	fi
-	
 	if [ ${#config_issues[@]} -gt 0 ]; then
 		gum_style --foreground="#ff5555" "✗ Repository configuration issues found:"
 		for issue in "${config_issues[@]}"; do
 			echo "  • $issue"
 		done
-		echo
-		if gum_confirm --default=true "Would you like to fix repository configuration automatically?"; then
-			fix_repository_config "$max_arch"
-		else
-			gum_style --foreground="#f1fa8c" "Please fix /etc/pacman.conf manually before continuing."
-			return 1
-		fi
 	else
 		gum_style --foreground="#50fa7b" "✓ Repository configuration looks good."
 	fi
 	echo
-	
-	# Check mirror performance and offer to rate mirrors
-	gum_style --foreground="#8be9fd" "Checking mirror performance..."
-	if gum_confirm --default=true "Would you like to rate mirrors for optimal download speeds?"; then
-		gum_style --foreground="#8be9fd" "Installing rate-mirrors if needed..."
-		execute sudo pacman -S --needed --noconfirm rate-mirrors
-		
-		gum_style --foreground="#8be9fd" "Rating CachyOS mirrors for best performance..."
-		if gum_spin --spinner dot --title "Finding fastest CachyOS mirrors..." -- bash -c "rate-mirrors cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist > /dev/null"; then
-			gum_style --foreground="#50fa7b" "✓ CachyOS mirrors updated successfully."
-			
-			# Copy to v3/v4 mirrorlists if they exist
-			if [ -f "/etc/pacman.d/cachyos-v3-mirrorlist" ]; then
-				execute sudo cp /etc/pacman.d/cachyos-mirrorlist /etc/pacman.d/cachyos-v3-mirrorlist
-				gum_style --foreground="#50fa7b" "✓ Updated cachyos-v3-mirrorlist."
-			fi
-			if [ -f "/etc/pacman.d/cachyos-v4-mirrorlist" ]; then
-				execute sudo cp /etc/pacman.d/cachyos-mirrorlist /etc/pacman.d/cachyos-v4-mirrorlist
-				gum_style --foreground="#50fa7b" "✓ Updated cachyos-v4-mirrorlist."
-			fi
-		else
-			gum_style --foreground="#ff5555" "✗ Mirror rating failed, continuing with current mirrors."
-		fi
-		echo
-	fi
 	
 	# Detect current system setup
 	local bootloader=$(detect_current_setup)
