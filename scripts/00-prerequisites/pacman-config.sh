@@ -34,12 +34,12 @@ main() {
 	execute sudo pacman -U --noconfirm \
 		'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst' \
 		'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst' \
-		'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst' \
-		'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v4-mirrorlist-22-1-any.pkg.tar.zst'
+		'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v4-mirrorlist-22-1-any.pkg.tar.zst' \
+		'https://mirror.cachyos.org/repo/x86_64/cachyos/pacman-7.0.0.r7.g1f38429-1-x86_64.pkg.tar.zst'
 
 	# Step 3: Backup current pacman.conf
 	gum_style --foreground="#8be9fd" "Backing up pacman.conf..."
-	execute sudo cp /etc/pacman.conf /etc/pacman.conf.bak
+	execute sudo cp /etc/pacman.conf /etc/pacman.conf.backup-$(date +%Y%m%d-%H%M%S)
 
 	# Step 4: Detect CPU architecture and add appropriate repositories
 	gum_style --foreground="#8be9fd" "Detecting CPU architecture..."
@@ -64,17 +64,19 @@ main() {
 	
 	# Create temporary file with the new repositories
 	local temp_conf="/tmp/pacman_cachyos_repos.conf"
-	cat > "$temp_conf" << EOF
-
-# CachyOS repositories
-[cachyos]
-Include = /etc/pacman.d/cachyos-mirrorlist
-
-EOF
-
 	# Add architecture-specific repositories based on CPU detection
 	if [ "$cpu_level" = "v4" ]; then
 		cat >> "$temp_conf" << EOF
+[options]
+Architecture = auto
+Color
+ILoveCandy
+VerbosePkgLists
+DisableDownloadTimeout
+ParallelDownloads = 10
+SigLevel = Required DatabaseOptional
+LocalFileSigLevel = Optional
+
 [cachyos-v4]
 Include = /etc/pacman.d/cachyos-v4-mirrorlist
 
@@ -84,9 +86,25 @@ Include = /etc/pacman.d/cachyos-v4-mirrorlist
 [cachyos-extra-v4]
 Include = /etc/pacman.d/cachyos-v4-mirrorlist
 
+[cachyos]
+Include = /etc/pacman.d/cachyos-mirrorlist
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+
 EOF
 	elif [ "$cpu_level" = "v3" ]; then
 		cat >> "$temp_conf" << EOF
+[options]
+Architecture = auto
+Color
+ILoveCandy
+VerbosePkgLists
+DisableDownloadTimeout
+ParallelDownloads = 10
+SigLevel = Required DatabaseOptional
+LocalFileSigLevel = Optional
+
 [cachyos-v3]
 Include = /etc/pacman.d/cachyos-v3-mirrorlist
 
@@ -96,75 +114,42 @@ Include = /etc/pacman.d/cachyos-v3-mirrorlist
 [cachyos-extra-v3]
 Include = /etc/pacman.d/cachyos-v3-mirrorlist
 
+[cachyos]
+Include = /etc/pacman.d/cachyos-mirrorlist
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+
+EOF
+else 
+		cat >> "$temp_conf" << EOF
+[options]
+Architecture = auto
+Color
+ILoveCandy
+VerbosePkgLists
+DisableDownloadTimeout
+ParallelDownloads = 10
+SigLevel = Required DatabaseOptional
+LocalFileSigLevel = Optional
+
+[cachyos]
+Include = /etc/pacman.d/cachyos-mirrorlist
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+
 EOF
 	fi
 
 	# Insert the repositories before the first [core] repository
-	gum_style --foreground="#8be9fd" "Inserting repositories into pacman.conf..."
+	gum_style --foreground="#8be9fd" "Overwriting repositories into pacman.conf..."
 	
-	# Find the line number of the first [core] repository
-	local core_line=$(grep -n "^\[core\]" /etc/pacman.conf | head -1 | cut -d: -f1)
-	
-	if [ -n "$core_line" ]; then
-		# Create a new pacman.conf with repositories inserted before [core]
-		local new_conf="/tmp/new_pacman.conf"
-		head -n $((core_line - 1)) /etc/pacman.conf > "$new_conf"
-		cat "$temp_conf" >> "$new_conf"
-		tail -n +${core_line} /etc/pacman.conf >> "$new_conf"
-		execute sudo cp "$new_conf" /etc/pacman.conf
-		rm -f "$new_conf"
-	else
-		# If [core] not found, append to end
-		execute sudo bash -c "cat '$temp_conf' >> /etc/pacman.conf"
-	fi
+	execute rm -f /etc/pacman.conf
+	execute cp "$temp_conf" /etc/pacman.conf
 
 	# Clean up
 	rm -f "$temp_conf"
-
-	# Step 6: Fix v4 mirrorlist variable format if needed
-	if [ -f "/etc/pacman.d/cachyos-v4-mirrorlist" ] && grep -q '\$arch_v4' /etc/pacman.d/cachyos-v4-mirrorlist; then
-		gum_style --foreground="#8be9fd" "Fixing v4 mirrorlist variable format..."
-		execute sudo sed -i 's/\$arch_v4/x86_64_v4/g' /etc/pacman.d/cachyos-v4-mirrorlist
-		gum_style --foreground="#50fa7b" "✓ Fixed \$arch_v4 -> x86_64_v4 in v4 mirrorlist."
-	fi
-
-	# Step 7: Install CachyOS pacman for v4 architecture support
-	gum_style --foreground="#8be9fd" "Installing CachyOS pacman with architecture support..."
-	
-	# First refresh databases to see the cachyos repo
-	execute sudo pacman -Sy --noconfirm
-	
-	# Install CachyOS pacman which supports x86_64_v4
-	execute sudo pacman -U --noconfirm \
-		'https://mirror.cachyos.org/repo/x86_64/cachyos/pacman-7.0.0.r7.g1f38429-1-x86_64.pkg.tar.zst'
-
-	if [ $? -eq 0 ]; then
-		gum_style --foreground="#50fa7b" "✓ CachyOS pacman installed successfully."
-	else
-		gum_style --foreground="#ff5555" "✗ Failed to install CachyOS pacman."
-		return 1
-	fi
-
-	# Step 8: Configure pacman settings including architecture support
-	gum_style --foreground="#ffb86c" "Configuring pacman settings..."
-	
-	execute set_pacman_conf "Color" "Color"
-	execute set_pacman_conf "VerbosePkgLists" "VerbosePkgLists"
-	execute set_pacman_conf "ParallelDownloads" "ParallelDownloads = 10"
-	execute set_pacman_conf "ILoveCandy" "ILoveCandy"
-	
-	# Configure architecture support based on detected CPU
-	if [ "$cpu_level" = "v4" ]; then
-		gum_style --foreground="#8be9fd" "Configuring pacman for x86-64-v4 architecture support..."
-		execute set_pacman_conf "Architecture" "Architecture = auto"
-		gum_style --foreground="#50fa7b" "✓ Architecture set to auto (CachyOS pacman will handle v4 detection)."
-	elif [ "$cpu_level" = "v3" ]; then
-		gum_style --foreground="#8be9fd" "Configuring pacman for x86-64-v3 architecture support..."
-		execute set_pacman_conf "Architecture" "Architecture = auto"
-		gum_style --foreground="#50fa7b" "✓ Architecture set to auto (CachyOS pacman will handle v3 detection)."
-	else
-		execute set_pacman_conf "Architecture" "Architecture = x86_64"
-	fi
 
 	# Step 9: Refresh package databases with new pacman
 	gum_style --foreground="#8be9fd" "Refreshing package databases with CachyOS pacman..."
@@ -175,24 +160,6 @@ EOF
 		return 1
 	fi
 
-	# Step 10: Verify installation
-	gum_style --foreground="#8be9fd" "Verifying CachyOS repository installation..."
-	
-	# Check if repositories are in pacman.conf
-	if grep -q "cachyos" /etc/pacman.conf; then
-		gum_style --foreground="#50fa7b" "✓ CachyOS repositories found in pacman.conf"
-	else
-		gum_style --foreground="#ff5555" "✗ CachyOS repositories not found in pacman.conf"
-		return 1
-	fi
-
-	# Check if CachyOS pacman is installed
-	if pacman -Q pacman | grep -q "cachyos"; then
-		gum_style --foreground="#50fa7b" "✓ CachyOS pacman with architecture support installed"
-	else
-		gum_style --foreground="#ff5555" "✗ Standard Arch pacman detected (may cause v4 issues)"
-	fi
-
 	# Check if packages are available
 	local available_repos=$(pacman-conf --repo-list | grep cachyos | wc -l)
 	if [ "$available_repos" -gt 0 ]; then
@@ -201,15 +168,10 @@ EOF
 		gum_style --foreground="#ff5555" "✗ No CachyOS repositories are active"
 		return 1
 	fi
-
-	# Test architecture compatibility
-	gum_style --foreground="#8be9fd" "Testing architecture compatibility..."
-	local arch_test=$(pacman-conf Architecture 2>/dev/null | head -1)
-	gum_style --foreground="#8be9fd" "Pacman architecture configuration: $arch_test"
 	
 	if [ "$cpu_level" = "v4" ]; then
 		# Test if we can query v4 packages
-		if pacman -Si linux-cachyos 2>/dev/null | grep -q "x86_64_v4\|x86_64"; then
+		if pacman -Si linux-cachyos 2>/dev/null | grep "x86_64_v4"; then
 			gum_style --foreground="#50fa7b" "✓ x86-64-v4 package compatibility verified"
 		else
 			gum_style --foreground="#f1fa8c" "⚠ Could not verify v4 package compatibility"
