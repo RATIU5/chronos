@@ -89,6 +89,12 @@ Include = /etc/pacman.d/cachyos-v4-mirrorlist
 [cachyos]
 Include = /etc/pacman.d/cachyos-mirrorlist
 
+[core]
+Include = /etc/pacman.d/mirrorlist
+
+[extra]
+Include = /etc/pacman.d/mirrorlist
+
 [multilib]
 Include = /etc/pacman.d/mirrorlist
 
@@ -117,6 +123,12 @@ Include = /etc/pacman.d/cachyos-v3-mirrorlist
 [cachyos]
 Include = /etc/pacman.d/cachyos-mirrorlist
 
+[core]
+Include = /etc/pacman.d/mirrorlist
+
+[extra]
+Include = /etc/pacman.d/mirrorlist
+
 [multilib]
 Include = /etc/pacman.d/mirrorlist
 
@@ -135,6 +147,12 @@ LocalFileSigLevel = Optional
 
 [cachyos]
 Include = /etc/pacman.d/cachyos-mirrorlist
+
+[core]
+Include = /etc/pacman.d/mirrorlist
+
+[extra]
+Include = /etc/pacman.d/mirrorlist
 
 [multilib]
 Include = /etc/pacman.d/mirrorlist
