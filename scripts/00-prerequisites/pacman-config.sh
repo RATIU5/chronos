@@ -145,8 +145,8 @@ EOF
 	# Insert the repositories before the first [core] repository
 	gum_style --foreground="#8be9fd" "Overwriting repositories into pacman.conf..."
 	
-	execute rm -f /etc/pacman.conf
-	execute cp "$temp_conf" /etc/pacman.conf
+	execute sudo rm -f /etc/pacman.conf
+	execute sudo cp "$temp_conf" /etc/pacman.conf
 
 	# Clean up
 	rm -f "$temp_conf"
