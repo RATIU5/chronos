@@ -9,6 +9,10 @@ readonly BLUE='\033[0;34m'
 readonly NC='\033[0m'
 
 readonly LOG_FILE="/var/log/chronos.log"
+if [[ ! -w "$LOG_FILE" ]]; then
+		sudo touch "$LOG_FILE"
+		sudo chmod 666 "$LOG_FILE"
+fi
 
 #################################################################################
 # Logging Functions - When not using GUM

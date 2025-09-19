@@ -592,9 +592,7 @@ EOF
 # Main Function
 #################################################################################
 
-main() {
-    log "Starting CachyOS transformation"
-    
+main() {  
     info "=== CachyOS Minimal Transformation Script ==="
     info "Phase 1: System validation"
     check_requirements
