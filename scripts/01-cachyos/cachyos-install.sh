@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
 
-#################################################################################
-# CachyOS Minimal Transformation Script
-# Transforms a clean Arch Linux installation into a minimal CachyOS system
-# 
-# This script uses the official CachyOS repository script and adds only the 
-# essential components missing for a complete minimal transformation:
-# - CachyOS kernel installation
-# - Hardware detection and driver setup
-# - System optimizations
-#################################################################################
-
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -115,21 +104,58 @@ install_cachyos_repositories() {
     
     # Download and extract official CachyOS repository script
     info "Downloading official CachyOS repository script..."
-    curl -L https://mirror.cachyos.org/cachyos-repo.tar.xz -o cachyos-repo.tar.xz
-    tar xf cachyos-repo.tar.xz
-    cd cachyos-repo
+    if ! curl -L https://mirror.cachyos.org/cachyos-repo.tar.xz -o cachyos-repo.tar.xz; then
+        error "Failed to download CachyOS repository script"
+        return 1
+    fi
+    
+    info "Extracting repository script..."
+    if ! tar xf cachyos-repo.tar.xz; then
+        error "Failed to extract repository script"
+        return 1
+    fi
+    
+    if ! cd cachyos-repo; then
+        error "Failed to enter cachyos-repo directory"
+        return 1
+    fi
     
     # Make script executable
     chmod +x cachyos-repo.sh
     
+    # Check if script exists and is executable
+    if [[ ! -x ./cachyos-repo.sh ]]; then
+        error "CachyOS script is not executable or doesn't exist"
+        return 1
+    fi
+    
+    info "CachyOS script found and is executable"
+    
     # Try running the official script first and capture output
     info "Running official CachyOS repository installation..."
+    info "This may take a few minutes..."
+    
     local script_output
     local script_exit_code
     
-    # Run script and capture both stdout and stderr
-    script_output=$(sudo ./cachyos-repo.sh --install 2>&1)
-    script_exit_code=$?
+    # Add timeout and more verbose output capture
+    info "Executing: sudo ./cachyos-repo.sh --install"
+    
+    # Use timeout to prevent hanging and capture all output
+    if script_output=$(timeout 300 sudo ./cachyos-repo.sh --install 2>&1); then
+        script_exit_code=0
+    else
+        script_exit_code=$?
+        if [[ $script_exit_code -eq 124 ]]; then
+            error "CachyOS script timed out after 5 minutes"
+            return 1
+        fi
+    fi
+    
+    # Always show the output for debugging
+    info "=== CachyOS Script Output ==="
+    echo "$script_output"
+    info "=== End of CachyOS Script Output ==="
     
     # Log the output for debugging
     echo "$script_output" | sudo tee -a "$LOG_FILE" > /dev/null
