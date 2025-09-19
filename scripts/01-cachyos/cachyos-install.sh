@@ -47,9 +47,15 @@ trap cleanup EXIT
 
 check_requirements() {
     # Check if running as root
-    if [[ $EUID -ne 0 ]]; then
-        error "This script must be run as root"
-        echo "Usage: sudo $SCRIPT_NAME"
+    if [[ $EUID -eq 0 ]]; then
+        error "This script should not be run as root directly"
+        echo "Usage: $SCRIPT_NAME (the script will use sudo when needed)"
+        exit 1
+    fi
+
+		# Check if sudo is available and user has sudo privileges
+    if ! command -v sudo &> /dev/null; then
+        error "sudo is required but not installed"
         exit 1
     fi
 
