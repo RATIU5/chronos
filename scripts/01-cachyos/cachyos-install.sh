@@ -1,13 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+#################################################################################
+# CachyOS Minimal Transformation Script
+# Transforms a clean Arch Linux installation into a minimal CachyOS system
+# 
+# This script uses the official CachyOS repository script and adds only the 
+# essential components missing for a complete minimal transformation:
+# - CachyOS kernel installation
+# - Hardware detection and driver setup
+# - System optimizations
+#################################################################################
 
 set -o errexit
 set -o nounset
 set -o pipefail
 
 readonly SCRIPT_NAME="$(basename "$0")"
-
 readonly TEMP_DIR="/tmp/cachyos-transform-$$"
 
+# Essential packages missing from the repo script
 readonly KERNEL_PACKAGES=(
     "linux-cachyos"
     "linux-cachyos-headers"
@@ -46,18 +57,30 @@ trap cleanup EXIT
 #################################################################################
 
 check_requirements() {
-    # Check if running as root
+    # Check if running as root (should NOT be root)
     if [[ $EUID -eq 0 ]]; then
         error "This script should not be run as root directly"
         echo "Usage: $SCRIPT_NAME (the script will use sudo when needed)"
         exit 1
     fi
-
-		# Check if sudo is available and user has sudo privileges
+    
+    # Check if sudo is available and user has sudo privileges
     if ! command -v sudo &> /dev/null; then
         error "sudo is required but not installed"
         exit 1
     fi
+    
+    # Test sudo access
+    if ! sudo -n true 2>/dev/null; then
+        info "This script requires sudo privileges for system modifications"
+        info "You may be prompted for your password"
+        if ! sudo true; then
+            error "Failed to obtain sudo privileges"
+            exit 1
+        fi
+    fi
+    
+    info "Sudo access confirmed"
 
     # Check if this is Arch Linux
     if [[ ! -f /etc/arch-release ]]; then
@@ -105,11 +128,11 @@ install_cachyos_repositories() {
     local script_exit_code
     
     # Run script and capture both stdout and stderr
-    script_output=$(./cachyos-repo.sh --install 2>&1)
+    script_output=$(sudo ./cachyos-repo.sh --install 2>&1)
     script_exit_code=$?
     
     # Log the output for debugging
-    sudo echo "$script_output" | tee -a "$LOG_FILE"
+    echo "$script_output" | sudo tee -a "$LOG_FILE" > /dev/null
     
     if [[ $script_exit_code -eq 0 ]]; then
         success "CachyOS repositories configured successfully"
@@ -131,6 +154,7 @@ install_cachyos_repositories() {
                 fi
             fi
         else
+            # Non-GPG error - show the actual error and don't try fallback
             error "CachyOS script failed with non-GPG error:"
             echo "$script_output" | grep -E "(ERROR|Error|error)" | head -5
             error "This doesn't appear to be a GPG keyserver issue"
@@ -166,11 +190,11 @@ is_gpg_keyserver_error() {
     for pattern in "${gpg_error_patterns[@]}"; do
         if echo "$output" | grep -qi "$pattern"; then
             info "Detected GPG error pattern: '$pattern'"
-            return 0
+            return 0  # True - this is a GPG error
         fi
     done
     
-    return 1
+    return 1  # False - not a GPG error
 }
 
 install_cachyos_key_manually() {
@@ -194,9 +218,9 @@ install_cachyos_key_manually() {
                 info "Successfully downloaded GPG key"
                 
                 # Import and sign the key
-                if pacman-key --add "$key_file"; then
+                if sudo pacman-key --add "$key_file"; then
                     info "GPG key imported successfully"
-                    if pacman-key --lsign-key "$key_id"; then
+                    if sudo pacman-key --lsign-key "$key_id"; then
                         success "GPG key signed locally"
                         return 0
                     else
@@ -232,7 +256,7 @@ run_cachyos_script_without_keys() {
     
     chmod +x "$modified_script"
     
-    if "./$modified_script" --install; then
+    if sudo "./$modified_script" --install; then
         success "Modified CachyOS script completed successfully"
         return 0
     else
@@ -242,7 +266,7 @@ run_cachyos_script_without_keys() {
 }
 
 #################################################################################
-# Package Installation
+# Package Installation Functions
 #################################################################################
 
 install_packages() {
@@ -252,12 +276,12 @@ install_packages() {
     info "Installing packages: $package_list"
     
     # Update package database first
-    pacman -Sy --noconfirm
+    sudo pacman -Sy --noconfirm
     
     # Install packages
     for package in "${packages[@]}"; do
         info "Installing: $package"
-        if pacman -S --noconfirm "$package"; then
+        if sudo pacman -S --noconfirm "$package"; then
             success "Installed: $package"
         else
             error "Failed to install: $package"
@@ -283,7 +307,7 @@ install_optional_components() {
     
     for package in "${OPTIONAL_PACKAGES[@]}"; do
         info "Installing optional package: $package"
-        if pacman -S --noconfirm "$package"; then
+        if sudo pacman -S --noconfirm "$package"; then
             success "Installed optional: $package"
         else
             warning "Failed to install optional package: $package (continuing...)"
@@ -300,7 +324,7 @@ configure_system() {
     
     # Update initramfs for new kernel
     info "Updating initramfs for CachyOS kernel..."
-    mkinitcpio -P
+    sudo mkinitcpio -P
     
     # Update bootloader configuration
     update_bootloader
@@ -324,7 +348,7 @@ update_bootloader() {
         for grub_cfg in "${grub_cfg_paths[@]}"; do
             if [[ -f "$grub_cfg" ]]; then
                 info "Updating GRUB configuration at $grub_cfg..."
-                grub-mkconfig -o "$grub_cfg"
+                sudo grub-mkconfig -o "$grub_cfg"
                 success "GRUB configuration updated"
                 bootloader_updated=true
                 break
@@ -344,7 +368,7 @@ update_bootloader() {
             if [[ -d "$loader_path" ]]; then
                 info "Updating systemd-boot (ESP detected at ${loader_path%/loader})..."
                 # bootctl will auto-detect ESP location
-                bootctl install
+                sudo bootctl install
                 success "systemd-boot updated"
                 bootloader_updated=true
                 break
@@ -378,7 +402,7 @@ update_bootloader() {
         local limine_config_paths=(
             "/boot/limine.cfg"           # BIOS systems
             "/boot/limine.conf"          # Alternative naming
-            "/boot/EFI/limine/limine.cfg"    # UEFI
+            "/boot/EFI/limine/limine.cfg"    # UEFI - your specific setup
             "/boot/efi/EFI/limine/limine.cfg" # ESP at /boot/efi
             "/efi/EFI/limine/limine.cfg"     # ESP at /efi
             "/boot/EFI/BOOT/limine.cfg"      # Fallback location
@@ -390,7 +414,7 @@ update_bootloader() {
                 info "Limine configuration detected at $limine_config"
                 info "Updating Limine bootloader binary..."
                 # Limine uses pacman hooks for kernel entries, just update the binary
-                if limine-install; then
+                if sudo limine-install; then
                     success "Limine bootloader updated"
                     info "Pacman hooks will automatically manage kernel entries"
                     bootloader_updated=true
@@ -408,8 +432,8 @@ update_bootloader() {
         if efibootmgr | grep -q "vmlinuz"; then
             info "EFISTUB entries detected - direct kernel booting in use"
             info "You may need to manually add CachyOS kernel entries with:"
-            info "  efibootmgr --create --disk /dev/sdX --part Y --label 'Arch Linux CachyOS' \\"
-            info "             --loader /vmlinuz-linux-cachyos --unicode 'root=... rw initrd=\\initramfs-linux-cachyos.img'"
+            info "  sudo efibootmgr --create --disk /dev/sdX --part Y --label 'Arch Linux CachyOS' \\"
+            info "                 --loader /vmlinuz-linux-cachyos --unicode 'root=... rw initrd=\\initramfs-linux-cachyos.img'"
             bootloader_updated=true
         fi
     fi
@@ -434,7 +458,7 @@ configure_hardware() {
     
     if command -v chwd &> /dev/null; then
         info "Running automatic hardware configuration..."
-        if chwd --autoconfigure; then
+        if sudo chwd --autoconfigure; then
             success "Hardware auto-configuration completed"
         else
             warning "Hardware auto-configuration had issues - check manually with 'chwd -l'"
@@ -448,12 +472,12 @@ optimize_system() {
     info "Applying system optimizations..."
     
     # Reload systemd to pick up new configurations
-    systemctl daemon-reload
+    sudo systemctl daemon-reload
     
     # Apply sysctl settings if available
     if [[ -f /etc/sysctl.d/99-cachyos-settings.conf ]]; then
         info "Applying CachyOS sysctl optimizations..."
-        sysctl -p /etc/sysctl.d/99-cachyos-settings.conf
+        sudo sysctl -p /etc/sysctl.d/99-cachyos-settings.conf
         success "System optimizations applied"
     else
         info "CachyOS optimizations will be applied on next boot"
@@ -462,7 +486,7 @@ optimize_system() {
     # Optimize mirrors if tool is available
     if command -v rate-mirrors &> /dev/null; then
         info "Optimizing CachyOS mirrors..."
-        if rate-mirrors --save /etc/pacman.d/cachyos-mirrorlist cachyos; then
+        if sudo rate-mirrors --save /etc/pacman.d/cachyos-mirrorlist cachyos; then
             success "CachyOS mirrors optimized"
         else
             warning "Mirror optimization failed - using default mirrors"
@@ -565,7 +589,7 @@ show_help() {
 CachyOS Minimal Transformation Script
 
 USAGE:
-    sudo $SCRIPT_NAME [OPTIONS]
+    $SCRIPT_NAME [OPTIONS]
 
 DESCRIPTION:
     Transforms a clean Arch Linux installation into a minimal CachyOS system.
@@ -579,17 +603,24 @@ OPTIONS:
     --help, -h      Show this help message
 
 EXAMPLES:
-    sudo $SCRIPT_NAME              # Transform current Arch system to CachyOS
+    $SCRIPT_NAME                   # Transform current Arch system to CachyOS
     $SCRIPT_NAME --help            # Show this help
 
 REQUIREMENTS:
     - Clean Arch Linux installation
-    - Root privileges (sudo)
+    - User with sudo privileges (do NOT run as root)
     - Internet connection
     - Working pacman installation
 
 The script automatically detects your CPU architecture and configures optimal
 repositories (x86-64-v3, x86-64-v4, or znver4 for AMD Zen4/5).
+
+USAGE NOTE:
+    Run this script as a regular user with sudo privileges:
+    ./cachyos-transform.sh
+    
+    Do NOT run as root:
+    sudo ./cachyos-transform.sh  # This will fail
 
 EOF
 }
@@ -598,7 +629,9 @@ EOF
 # Main Function
 #################################################################################
 
-main() {  
+main() {
+    log "Starting CachyOS transformation script"
+    
     info "=== CachyOS Minimal Transformation Script ==="
     info "Phase 1: System validation"
     check_requirements
@@ -626,7 +659,7 @@ main() {
         exit 1
     fi
     
-    log "CachyOS transformation completed successfully"
+    log "CachyOS transformation script completed"
 }
 
 #################################################################################

@@ -14,7 +14,7 @@ if ! command -v pacman &> /dev/null; then
     exit 1
 fi
 
-if ! sudo pacman -Syu --noconfirm --needed git; then
+if ! sudo pacman -S --noconfirm --needed git; then
     log_error "Failed to install git. Please check your package manager settings."
 		exit 1
 fi
