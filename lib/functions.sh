@@ -8,6 +8,8 @@ readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly NC='\033[0m'
 
+readonly LOG_FILE="/var/log/chronos.log"
+
 #################################################################################
 # Logging Functions - When not using GUM
 #################################################################################

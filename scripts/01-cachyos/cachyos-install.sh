@@ -4,21 +4,21 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_NAME="$(basename "$0")"
-LOG_FILE="/var/log/cachyos-transform.log"
-TEMP_DIR="/tmp/cachyos-transform-$$"
+readonly SCRIPT_NAME="$(basename "$0")"
 
-KERNEL_PACKAGES=(
+readonly TEMP_DIR="/tmp/cachyos-transform-$$"
+
+readonly KERNEL_PACKAGES=(
     "linux-cachyos"
     "linux-cachyos-headers"
 )
 
-SYSTEM_PACKAGES=(
+readonly SYSTEM_PACKAGES=(
     "cachyos-settings"
     "chwd"
 )
 
-OPTIONAL_PACKAGES=(
+readonly OPTIONAL_PACKAGES=(
     "cachyos-rate-mirrors"
 )
 
@@ -103,7 +103,7 @@ install_cachyos_repositories() {
     script_exit_code=$?
     
     # Log the output for debugging
-    echo "$script_output" | tee -a "$LOG_FILE"
+    sudo echo "$script_output" | tee -a "$LOG_FILE"
     
     if [[ $script_exit_code -eq 0 ]]; then
         success "CachyOS repositories configured successfully"
