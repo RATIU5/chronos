@@ -12,7 +12,7 @@ source "$CHRONOS_PATH/scripts/00-prerequisites/system-update.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/pacman-config.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/base-packages.sh"
 
-source "$CHRONOS_PATH/scripts/01-system/kernel-update.sh"
+source "$CHRONOS_PATH/scripts/01-cachyos/cachyos-install.sh"
 
 gum_style --foreground="#50fa7b" "Installation complete!"
 echo
