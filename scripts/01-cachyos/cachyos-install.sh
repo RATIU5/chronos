@@ -3,8 +3,8 @@
 #################################################################################
 # CachyOS Minimal Transformation Script
 # Transforms a clean Arch Linux installation into a minimal CachyOS system
-# 
-# This script uses the official CachyOS repository script and adds only the 
+#
+# This script uses the official CachyOS repository script and adds only the
 # essential components missing for a complete minimal transformation:
 # - CachyOS kernel installation
 # - Hardware detection and driver setup
@@ -14,6 +14,10 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+
+# Source functions
+CHRONOS_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$CHRONOS_PATH/lib/functions.sh"
 
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly TEMP_DIR="/tmp/cachyos-transform-$$"
@@ -72,15 +76,15 @@ check_requirements() {
     
     # Test sudo access
     if ! sudo -n true 2>/dev/null; then
-        info "This script requires sudo privileges for system modifications"
-        info "You may be prompted for your password"
+        gum_style --foreground="#8be9fd" "This script requires sudo privileges for system modifications"
+        gum_style --foreground="#8be9fd" "You may be prompted for your password"
         if ! sudo true; then
             error "Failed to obtain sudo privileges"
             exit 1
         fi
     fi
     
-    info "Sudo access confirmed"
+    gum_style --foreground="#50fa7b" "✓ Sudo access confirmed"
 
     # Check if this is Arch Linux
     if [[ ! -f /etc/arch-release ]]; then
@@ -100,7 +104,7 @@ check_requirements() {
         exit 1
     fi
 
-    info "System requirements validated"
+    gum_style --foreground="#50fa7b" "✓ System requirements validated"
 }
 
 #################################################################################
@@ -108,19 +112,19 @@ check_requirements() {
 #################################################################################
 
 install_cachyos_repositories() {
-    info "Setting up CachyOS repositories using official script..."
+    gum_style --foreground="#8be9fd" "Setting up CachyOS repositories using official script..."
     
     mkdir -p "$TEMP_DIR"
     cd "$TEMP_DIR"
     
     # Download and extract official CachyOS repository script
-    info "Downloading official CachyOS repository script..."
+    gum_style --foreground="#8be9fd" "Downloading official CachyOS repository script..."
     if ! curl -L https://mirror.cachyos.org/cachyos-repo.tar.xz -o cachyos-repo.tar.xz; then
         error "Failed to download CachyOS repository script"
         return 1
     fi
     
-    info "Extracting repository script..."
+    gum_style --foreground="#8be9fd" "Extracting repository script..."
     if ! tar xf cachyos-repo.tar.xz; then
         error "Failed to extract repository script"
         return 1
@@ -140,17 +144,17 @@ install_cachyos_repositories() {
         return 1
     fi
     
-    info "CachyOS script found and is executable"
+    gum_style --foreground="#50fa7b" "✓ CachyOS script found and is executable"
     
     # Try running the official script first and capture output
-    info "Running official CachyOS repository installation..."
-    info "This may take a few minutes..."
+    gum_style --foreground="#8be9fd" "Running official CachyOS repository installation..."
+    gum_style --foreground="#f1fa8c" "This may take a few minutes..."
     
     local script_output
     local script_exit_code
     
     # Add timeout and more verbose output capture
-    info "Executing: sudo ./cachyos-repo.sh --install"
+    gum_style --foreground="#8be9fd" "Executing: sudo ./cachyos-repo.sh --install"
     
     # Use timeout to prevent hanging and capture all output
     # Use 'yes' to automatically answer prompts with 'y'
@@ -165,29 +169,29 @@ install_cachyos_repositories() {
     fi
     
     # Always show the output for debugging
-    info "=== CachyOS Script Output ==="
-    echo "$script_output"
-    info "=== End of CachyOS Script Output ==="
+    gum_style --foreground="#bd93f9" "=== CachyOS Script Output ==="
+    echo "$script_output" | tee -a "$LOG_FILE"
+    gum_style --foreground="#bd93f9" "=== End of CachyOS Script Output ==="
     
     # Log the output for debugging
     echo "$script_output" | sudo tee -a "$LOG_FILE" > /dev/null
     
     if [[ $script_exit_code -eq 0 ]]; then
-        success "CachyOS repositories configured successfully"
+        gum_style --foreground="#50fa7b" "✓ CachyOS repositories configured successfully"
         return 0
     else
-        warning "Official CachyOS script failed with exit code: $script_exit_code"
+        gum_style --foreground="#f1fa8c" "⚠ Official CachyOS script failed with exit code: $script_exit_code"
         
         # Check if the failure is specifically due to GPG/keyserver issues
         if is_gpg_keyserver_error "$script_output"; then
-            warning "Detected GPG keyserver error in script output"
-            info "Attempting manual key installation as fallback..."
+            gum_style --foreground="#f1fa8c" "⚠ Detected GPG keyserver error in script output"
+            gum_style --foreground="#8be9fd" "Attempting manual key installation as fallback..."
             
             # Manual fallback method for GPG issues
             if install_cachyos_key_manually; then
                 # Try the official script again, but with key installation bypassed
                 if run_cachyos_script_without_keys; then
-                    success "CachyOS repositories configured successfully using GPG fallback method"
+                    gum_style --foreground="#50fa7b" "✓ CachyOS repositories configured successfully using GPG fallback method"
                     return 0
                 fi
             fi
@@ -227,7 +231,7 @@ is_gpg_keyserver_error() {
     
     for pattern in "${gpg_error_patterns[@]}"; do
         if echo "$output" | grep -qi "$pattern"; then
-            info "Detected GPG error pattern: '$pattern'"
+            gum_style --foreground="#8be9fd" "Detected GPG error pattern: '$pattern'"
             return 0  # True - this is a GPG error
         fi
     done
@@ -236,7 +240,7 @@ is_gpg_keyserver_error() {
 }
 
 install_cachyos_key_manually() {
-    info "Manually downloading and installing CachyOS GPG key..."
+    gum_style --foreground="#8be9fd" "Manually downloading and installing CachyOS GPG key..."
     
     local key_id="F3B607488DB35A47"
     local key_file="cachyos-key.asc"
@@ -249,29 +253,29 @@ install_cachyos_key_manually() {
     )
     
     for url in "${keyserver_urls[@]}"; do
-        info "Trying keyserver: ${url}"
+        gum_style --foreground="#8be9fd" "Trying keyserver: ${url}"
         if curl -s -o "$key_file" "$url" && [[ -s "$key_file" ]]; then
             # Check if we got an actual key (not an error page)
             if grep -q "BEGIN PGP PUBLIC KEY" "$key_file"; then
-                info "Successfully downloaded GPG key"
+                gum_style --foreground="#50fa7b" "✓ Successfully downloaded GPG key"
                 
                 # Import and sign the key
                 if sudo pacman-key --add "$key_file"; then
-                    info "GPG key imported successfully"
+                    gum_style --foreground="#50fa7b" "✓ GPG key imported successfully"
                     if sudo pacman-key --lsign-key "$key_id"; then
-                        success "GPG key signed locally"
+                        gum_style --foreground="#50fa7b" "✓ GPG key signed locally"
                         return 0
                     else
-                        warning "Failed to locally sign the key"
+                        gum_style --foreground="#f1fa8c" "⚠ Failed to locally sign the key"
                     fi
                 else
-                    warning "Failed to import GPG key"
+                    gum_style --foreground="#f1fa8c" "⚠ Failed to import GPG key"
                 fi
             else
-                info "Downloaded file doesn't contain a valid GPG key, trying next keyserver..."
+                gum_style --foreground="#8be9fd" "Downloaded file doesn't contain a valid GPG key, trying next keyserver..."
             fi
         else
-            info "Failed to download from this keyserver, trying next..."
+            gum_style --foreground="#8be9fd" "Failed to download from this keyserver, trying next..."
         fi
     done
     
@@ -280,7 +284,7 @@ install_cachyos_key_manually() {
 }
 
 run_cachyos_script_without_keys() {
-    info "Running CachyOS script with key installation bypassed..."
+    gum_style --foreground="#8be9fd" "Running CachyOS script with key installation bypassed..."
     
     # Create a modified version of the script that skips key operations
     local modified_script="cachyos-repo-modified.sh"
@@ -296,7 +300,7 @@ run_cachyos_script_without_keys() {
     
     # Use 'yes' to automatically answer prompts with 'y'
     if timeout 300 bash -c "yes | sudo ./$modified_script --install" 2>&1; then
-        success "Modified CachyOS script completed successfully"
+        gum_style --foreground="#50fa7b" "✓ Modified CachyOS script completed successfully"
         return 0
     else
         error "Modified CachyOS script failed"
@@ -312,16 +316,16 @@ install_packages() {
     local packages=("$@")
     local package_list="${packages[*]}"
     
-    info "Installing packages: $package_list"
+    gum_style --foreground="#8be9fd" "Installing packages: $package_list"
     
     # Update package database first
     sudo pacman -Sy --noconfirm
     
     # Install packages
     for package in "${packages[@]}"; do
-        info "Installing: $package"
+        gum_style --foreground="#8be9fd" "Installing: $package"
         if sudo pacman -S --noconfirm "$package"; then
-            success "Installed: $package"
+            gum_style --foreground="#50fa7b" "✓ Installed: $package"
         else
             error "Failed to install: $package"
             return 1
@@ -330,26 +334,26 @@ install_packages() {
 }
 
 install_cachyos_kernel() {
-    info "Installing CachyOS optimized kernel..."
+    gum_style --foreground="#8be9fd" "Installing CachyOS optimized kernel..."
     install_packages "${KERNEL_PACKAGES[@]}"
-    success "CachyOS kernel installed"
+    gum_style --foreground="#50fa7b" "✓ CachyOS kernel installed"
 }
 
 install_system_components() {
-    info "Installing CachyOS system components..."
+    gum_style --foreground="#8be9fd" "Installing CachyOS system components..."
     install_packages "${SYSTEM_PACKAGES[@]}"
-    success "CachyOS system components installed"
+    gum_style --foreground="#50fa7b" "✓ CachyOS system components installed"
 }
 
 install_optional_components() {
-    info "Installing optional components..."
+    gum_style --foreground="#8be9fd" "Installing optional components..."
     
     for package in "${OPTIONAL_PACKAGES[@]}"; do
-        info "Installing optional package: $package"
+        gum_style --foreground="#8be9fd" "Installing optional package: $package"
         if sudo pacman -S --noconfirm "$package"; then
-            success "Installed optional: $package"
+            gum_style --foreground="#50fa7b" "✓ Installed optional: $package"
         else
-            warning "Failed to install optional package: $package (continuing...)"
+            gum_style --foreground="#f1fa8c" "⚠ Failed to install optional package: $package (continuing...)"
         fi
     done
 }
@@ -359,20 +363,20 @@ install_optional_components() {
 #################################################################################
 
 configure_system() {
-    info "Configuring system for CachyOS..."
+    gum_style --foreground="#8be9fd" "Configuring system for CachyOS..."
     
     # Update initramfs for new kernel
-    info "Updating initramfs for CachyOS kernel..."
+    gum_style --foreground="#8be9fd" "Updating initramfs for CachyOS kernel..."
     sudo mkinitcpio -P
     
     # Update bootloader configuration
     update_bootloader
     
-    success "System configuration completed"
+    gum_style --foreground="#50fa7b" "✓ System configuration completed"
 }
 
 update_bootloader() {
-    info "Updating bootloader configuration..."
+    gum_style --foreground="#8be9fd" "Updating bootloader configuration..."
     
     local bootloader_updated=false
     
@@ -386,9 +390,9 @@ update_bootloader() {
         
         for grub_cfg in "${grub_cfg_paths[@]}"; do
             if [[ -f "$grub_cfg" ]]; then
-                info "Updating GRUB configuration at $grub_cfg..."
+                gum_style --foreground="#8be9fd" "Updating GRUB configuration at $grub_cfg..."
                 sudo grub-mkconfig -o "$grub_cfg"
-                success "GRUB configuration updated"
+                gum_style --foreground="#50fa7b" "✓ GRUB configuration updated"
                 bootloader_updated=true
                 break
             fi
@@ -405,10 +409,10 @@ update_bootloader() {
         
         for loader_path in "${systemd_boot_paths[@]}"; do
             if [[ -d "$loader_path" ]]; then
-                info "Updating systemd-boot (ESP detected at ${loader_path%/loader})..."
+                gum_style --foreground="#8be9fd" "Updating systemd-boot (ESP detected at ${loader_path%/loader})..."
                 # bootctl will auto-detect ESP location
                 sudo bootctl install
-                success "systemd-boot updated"
+                gum_style --foreground="#50fa7b" "✓ systemd-boot updated"
                 bootloader_updated=true
                 break
             fi
@@ -426,10 +430,10 @@ update_bootloader() {
         
         for refind_path in "${refind_paths[@]}"; do
             if [[ -d "$refind_path" ]]; then
-                info "rEFInd detected at $refind_path"
-                info "rEFInd automatically detects kernels - no manual update needed"
-                info "New CachyOS kernel will appear in rEFInd menu on next boot"
-                success "rEFInd ready for new kernel"
+                gum_style --foreground="#8be9fd" "rEFInd detected at $refind_path"
+                gum_style --foreground="#8be9fd" "rEFInd automatically detects kernels - no manual update needed"
+                gum_style --foreground="#8be9fd" "New CachyOS kernel will appear in rEFInd menu on next boot"
+                gum_style --foreground="#50fa7b" "✓ rEFInd ready for new kernel"
                 bootloader_updated=true
                 break
             fi
@@ -450,15 +454,15 @@ update_bootloader() {
         
         for limine_config in "${limine_config_paths[@]}"; do
             if [[ -f "$limine_config" ]]; then
-                info "Limine configuration detected at $limine_config"
-                info "Updating Limine bootloader binary..."
+                gum_style --foreground="#8be9fd" "Limine configuration detected at $limine_config"
+                gum_style --foreground="#8be9fd" "Updating Limine bootloader binary..."
                 # Limine uses pacman hooks for kernel entries, just update the binary
                 if sudo limine-install; then
-                    success "Limine bootloader updated"
-                    info "Pacman hooks will automatically manage kernel entries"
+                    gum_style --foreground="#50fa7b" "✓ Limine bootloader updated"
+                    gum_style --foreground="#8be9fd" "Pacman hooks will automatically manage kernel entries"
                     bootloader_updated=true
                 else
-                    warning "Limine binary update failed - may need manual intervention"
+                    gum_style --foreground="#f1fa8c" "⚠ Limine binary update failed - may need manual intervention"
                 fi
                 break
             fi
@@ -469,66 +473,66 @@ update_bootloader() {
     if [[ -d /sys/firmware/efi ]] && command -v efibootmgr &> /dev/null; then
         # Check if there are existing EFISTUB entries (kernels loaded directly)
         if efibootmgr | grep -q "vmlinuz"; then
-            info "EFISTUB entries detected - direct kernel booting in use"
-            info "You may need to manually add CachyOS kernel entries with:"
-            info "  sudo efibootmgr --create --disk /dev/sdX --part Y --label 'Arch Linux CachyOS' \\"
-            info "                 --loader /vmlinuz-linux-cachyos --unicode 'root=... rw initrd=\\initramfs-linux-cachyos.img'"
+            gum_style --foreground="#8be9fd" "EFISTUB entries detected - direct kernel booting in use"
+            gum_style --foreground="#8be9fd" "You may need to manually add CachyOS kernel entries with:"
+            gum_style --foreground="#8be9fd" "  sudo efibootmgr --create --disk /dev/sdX --part Y --label 'Arch Linux CachyOS' \\"
+            gum_style --foreground="#8be9fd" "                 --loader /vmlinuz-linux-cachyos --unicode 'root=... rw initrd=\\initramfs-linux-cachyos.img'"
             bootloader_updated=true
         fi
     fi
     
     # Report results
     if ! $bootloader_updated; then
-        warning "No recognized bootloader configuration found"
-        info "Supported bootloaders: GRUB, systemd-boot, rEFInd, Limine, EFISTUB"
-        info "Checked locations:"
-        info "  GRUB: /boot/grub/, /boot/grub2/, /efi/grub/"
-        info "  systemd-boot: /boot/loader/, /efi/loader/, /boot/efi/loader/"
-        info "  rEFInd: /boot/EFI/refind/, /boot/efi/EFI/refind/, /efi/EFI/refind/"
-        info "  Limine: /boot/EFI/limine/, /boot/efi/EFI/limine/, /efi/EFI/limine/"
-        info ""
-        info "The CachyOS kernel has been installed and initramfs updated"
-        info "You may need to manually update your bootloader configuration"
+        gum_style --foreground="#f1fa8c" "⚠ No recognized bootloader configuration found"
+        gum_style --foreground="#8be9fd" "Supported bootloaders: GRUB, systemd-boot, rEFInd, Limine, EFISTUB"
+        gum_style --foreground="#8be9fd" "Checked locations:"
+        gum_style --foreground="#8be9fd" "  GRUB: /boot/grub/, /boot/grub2/, /efi/grub/"
+        gum_style --foreground="#8be9fd" "  systemd-boot: /boot/loader/, /efi/loader/, /boot/efi/loader/"
+        gum_style --foreground="#8be9fd" "  rEFInd: /boot/EFI/refind/, /boot/efi/EFI/refind/, /efi/EFI/refind/"
+        gum_style --foreground="#8be9fd" "  Limine: /boot/EFI/limine/, /boot/efi/EFI/limine/, /efi/EFI/limine/"
+        gum_style --foreground="#8be9fd" ""
+        gum_style --foreground="#8be9fd" "The CachyOS kernel has been installed and initramfs updated"
+        gum_style --foreground="#8be9fd" "You may need to manually update your bootloader configuration"
     fi
 }
 
 configure_hardware() {
-    info "Configuring hardware detection and drivers..."
+    gum_style --foreground="#8be9fd" "Configuring hardware detection and drivers..."
     
     if command -v chwd &> /dev/null; then
-        info "Running automatic hardware configuration..."
+        gum_style --foreground="#8be9fd" "Running automatic hardware configuration..."
         if sudo chwd --autoconfigure; then
-            success "Hardware auto-configuration completed"
+            gum_style --foreground="#50fa7b" "✓ Hardware auto-configuration completed"
         else
-            warning "Hardware auto-configuration had issues - check manually with 'chwd -l'"
+            gum_style --foreground="#f1fa8c" "⚠ Hardware auto-configuration had issues - check manually with 'chwd --list'"
         fi
     else
-        warning "Hardware detection tool (chwd) not available"
+        gum_style --foreground="#f1fa8c" "⚠ Hardware detection tool (chwd) not available"
     fi
 }
 
 optimize_system() {
-    info "Applying system optimizations..."
+    gum_style --foreground="#8be9fd" "Applying system optimizations..."
     
     # Reload systemd to pick up new configurations
     sudo systemctl daemon-reload
     
     # Apply sysctl settings if available
     if [[ -f /etc/sysctl.d/99-cachyos-settings.conf ]]; then
-        info "Applying CachyOS sysctl optimizations..."
+        gum_style --foreground="#8be9fd" "Applying CachyOS sysctl optimizations..."
         sudo sysctl -p /etc/sysctl.d/99-cachyos-settings.conf
-        success "System optimizations applied"
+        gum_style --foreground="#50fa7b" "✓ System optimizations applied"
     else
-        info "CachyOS optimizations will be applied on next boot"
+        gum_style --foreground="#8be9fd" "CachyOS optimizations will be applied on next boot"
     fi
     
     # Optimize mirrors if tool is available
     if command -v rate-mirrors &> /dev/null; then
-        info "Optimizing CachyOS mirrors..."
+        gum_style --foreground="#8be9fd" "Optimizing CachyOS mirrors..."
         if sudo rate-mirrors --save /etc/pacman.d/cachyos-mirrorlist cachyos; then
-            success "CachyOS mirrors optimized"
+            gum_style --foreground="#50fa7b" "✓ CachyOS mirrors optimized"
         else
-            warning "Mirror optimization failed - using default mirrors"
+            gum_style --foreground="#f1fa8c" "⚠ Mirror optimization failed - using default mirrors"
         fi
     fi
 }
@@ -538,13 +542,13 @@ optimize_system() {
 #################################################################################
 
 verify_installation() {
-    info "Verifying CachyOS installation..."
+    gum_style --foreground="#8be9fd" "Verifying CachyOS installation..."
     
     local errors=0
     
     # Check kernel
     if pacman -Q linux-cachyos &> /dev/null; then
-        success "✓ CachyOS kernel installed"
+        gum_style --foreground="#50fa7b" "✓ CachyOS kernel installed"
     else
         error "✗ CachyOS kernel not found"
         ((errors++))
@@ -552,7 +556,7 @@ verify_installation() {
     
     # Check repositories
     if grep -q "cachyos" /etc/pacman.conf; then
-        success "✓ CachyOS repositories configured"
+        gum_style --foreground="#50fa7b" "✓ CachyOS repositories configured"
     else
         error "✗ CachyOS repositories not configured"
         ((errors++))
@@ -560,7 +564,7 @@ verify_installation() {
     
     # Check keyring
     if pacman -Q cachyos-keyring &> /dev/null; then
-        success "✓ CachyOS keyring installed"
+        gum_style --foreground="#50fa7b" "✓ CachyOS keyring installed"
     else
         error "✗ CachyOS keyring not found"
         ((errors++))
@@ -568,20 +572,20 @@ verify_installation() {
     
     # Check settings
     if pacman -Q cachyos-settings &> /dev/null; then
-        success "✓ CachyOS system settings installed"
+        gum_style --foreground="#50fa7b" "✓ CachyOS system settings installed"
     else
-        warning "! CachyOS settings package not found"
+        gum_style --foreground="#f1fa8c" "! CachyOS settings package not found"
     fi
     
     # Check hardware detection
     if pacman -Q chwd &> /dev/null; then
-        success "✓ Hardware detection tool installed"
+        gum_style --foreground="#50fa7b" "✓ Hardware detection tool installed"
     else
-        warning "! Hardware detection tool not found"
+        gum_style --foreground="#f1fa8c" "! Hardware detection tool not found"
     fi
     
     if [[ $errors -eq 0 ]]; then
-        success "Installation verification passed!"
+        gum_style --foreground="#50fa7b" "✓ Installation verification passed!"
         return 0
     else
         error "Installation verification failed with $errors critical errors"
@@ -596,30 +600,29 @@ verify_installation() {
 show_completion_info() {
     echo ""
     echo "==============================================================================="
-    success "CachyOS transformation completed successfully!"
+    gum_style --foreground="#50fa7b" --border="rounded" --padding="1" --margin="1" "✓ CachyOS installation completed successfully!"
     echo "==============================================================================="
     echo ""
-    info "What was installed:"
-    echo "  • CachyOS optimized repositories (with architecture detection)"
-    echo "  • CachyOS kernel with BORE scheduler and performance optimizations"
-    echo "  • Hardware detection and driver management (chwd)"
-    echo "  • System-level performance optimizations (cachyos-settings)"
-    echo "  • Optimized package mirrors"
+    gum_style --foreground="#8be9fd" "What was installed:"
+    echo "  • CachyOS optimized repositories (with architecture detection)" | tee -a "$LOG_FILE"
+    echo "  • CachyOS kernel with BORE scheduler and performance optimizations" | tee -a "$LOG_FILE"
+    echo "  • Hardware detection and driver management (chwd)" | tee -a "$LOG_FILE"
+    echo "  • System-level performance optimizations (cachyos-settings)" | tee -a "$LOG_FILE"
+    echo "  • Optimized package mirrors" | tee -a "$LOG_FILE"
+    echo "" | tee -a "$LOG_FILE"
+    gum_style --foreground="#ff5555" --bold "CRITICAL: You MUST reboot to use the CachyOS kernel!"
+    echo "" | tee -a "$LOG_FILE"
+    gum_style --foreground="#8be9fd" "After reboot:"
+    echo "  • Verify kernel: uname -r" | tee -a "$LOG_FILE"
+    echo "  • Check available drivers: chwd --list" | tee -a "$LOG_FILE"
+    echo "  • Update system: pacman -Syu" | tee -a "$LOG_FILE"
+    echo "" | tee -a "$LOG_FILE"
+    gum_style --foreground="#8be9fd" "Useful commands:"
+    echo "  • chwd --autoconfigure    - Auto-configure all hardware" | tee -a "$LOG_FILE"
+    echo "  • chwd --list                 - List available driver profiles" | tee -a "$LOG_FILE"
+    echo "  • chwd -i [profile]       - Install specific driver profile" | tee -a "$LOG_FILE"
+    echo "  • rate-mirrors cachyos    - Re-optimize mirror rankings" | tee -a "$LOG_FILE"
     echo ""
-    warning "CRITICAL: You MUST reboot to use the CachyOS kernel!"
-    echo ""
-    info "After reboot:"
-    echo "  • Verify kernel: uname -r"
-    echo "  • Check available drivers: chwd -l"
-    echo "  • Update system: pacman -Syu"
-    echo ""
-    info "Useful commands:"
-    echo "  • chwd --autoconfigure    - Auto-configure all hardware"
-    echo "  • chwd -l                 - List available driver profiles"  
-    echo "  • chwd -i [profile]       - Install specific driver profile"
-    echo "  • rate-mirrors cachyos    - Re-optimize mirror rankings"
-    echo ""
-    success "Your minimal CachyOS system is ready!"
     echo "==============================================================================="
 }
 
@@ -671,26 +674,26 @@ EOF
 main() {
     log "Starting CachyOS transformation script"
     
-    info "=== CachyOS Minimal Transformation Script ==="
-    info "Phase 1: System validation"
+    gum_style --foreground="#bd93f9" --bold --border="rounded" --padding="1" "=== CachyOS Minimal Transformation Script ==="
+    gum_style --foreground="#8be9fd" "Phase 1: System validation"
     check_requirements
     
-    info "Phase 2: CachyOS repository setup"
+    gum_style --foreground="#8be9fd" "Phase 2: CachyOS repository setup"
     install_cachyos_repositories
     
-    info "Phase 3: CachyOS kernel installation"
+    gum_style --foreground="#8be9fd" "Phase 3: CachyOS kernel installation"
     install_cachyos_kernel
     
-    info "Phase 4: System components installation"
+    gum_style --foreground="#8be9fd" "Phase 4: System components installation"
     install_system_components
     install_optional_components
     
-    info "Phase 5: System configuration"
+    gum_style --foreground="#8be9fd" "Phase 5: System configuration"
     configure_system
     configure_hardware
     optimize_system
     
-    info "Phase 6: Verification"
+    gum_style --foreground="#8be9fd" "Phase 6: Verification"
     if verify_installation; then
         show_completion_info
     else

@@ -15,19 +15,7 @@ CHRONOS_GITHUB_USERNAME=${CHRONOS_GITHUB_USERNAME:-""}
 CHRONOS_GITHUB_EMAIL=${CHRONOS_GITHUB_EMAIL:-""}
 
 gum_style --foreground="#ff5555" --bold --italic --width=58 --align="center" \
-	"Let's begin. First we have a few questions for you."	
-
-echo ""
-
-gum_confirm "Do you want to confirm every step of the installation? (Recommended for safety)" --affirmative "Yes, confirm each step" --negative "Do not confirm each step" && {
-		export CHRONOS_CONFIRM_STEPS=true
-		gum_style --foreground="#50fa7b" --bold --italic --width=58 --align="center" \
-			"Great! You will be prompted to confirm each step."
-	} || {
-		export CHRONOS_CONFIRM_STEPS=false
-		gum_style --foreground="#ff5555" --bold --italic --width=58 --align="center" \
-			"Alright! The installation will proceed without confirmation."
-	}
+	"Let's begin. First, answer a couple questions."	
 
 echo ""
 

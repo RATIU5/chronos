@@ -510,7 +510,7 @@ run_gum() {
 }
 
 gum_confirm() { run_gum confirm "$@"; }
-gum_style() { run_gum style "$@"; }
+gum_style() { run_gum style "$@" | tee -a "$LOG_FILE"; }
 gum_spin() { run_gum spin "$@"; }
 gum_choose() { run_gum choose "$@"; }
 gum_input() { run_gum input "$@"; }
