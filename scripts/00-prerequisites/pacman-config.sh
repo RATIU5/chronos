@@ -193,10 +193,6 @@ EOF
 		gum_style --foreground="#8be9fd" "Rating CachyOS mirrors for best performance..."
 		if gum_spin --spinner dot --title "Finding fastest CachyOS mirrors..." -- bash -c "rate-mirrors cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist > /dev/null"; then
 			gum_style --foreground="#50fa7b" "✓ CachyOS mirrors updated successfully."
-			if [ -f "/etc/pacman.d/cachyos-v4-mirrorlist" ]; then
-				execute sudo cp /etc/pacman.d/cachyos-mirrorlist /etc/pacman.d/cachyos-v4-mirrorlist
-				gum_style --foreground="#50fa7b" "✓ Updated cachyos-v4-mirrorlist."
-			fi
 		else
 			gum_style --foreground="#ff5555" "✗ Mirror rating failed, continuing with current mirrors."
 		fi

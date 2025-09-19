@@ -93,36 +93,58 @@ EOF
 	gum_style --foreground="#8be9fd" "Refreshing package database..."
 	execute sudo pacman -Sy
 }
+# Function to find Limine configuration file
+find_limine_config() {
+	local config_paths=(
+		"/boot/EFI/limine/limine.conf"
+		"/boot/limine/limine.conf"
+		"/boot/limine.conf"
+		"/limine/limine.conf"
+		"/limine.conf"
+	)
+
+	for path in "${config_paths[@]}"; do
+		if [ -f "$path" ]; then
+			echo "$path"
+			return 0
+		fi
+	done
+
+	return 1
+}
+
 detect_current_setup() {
 	local current_kernel=$(uname -r)
-	local bootloader=""
-	
-	if [ -d "/sys/firmware/efi" ]; then
-		if [ -f "/boot/loader/loader.conf" ]; then
-			bootloader="systemd-boot"
-		elif [ -f "/boot/grub/grub.cfg" ]; then
-			bootloader="grub"
-		elif [ -f "/boot/refind_linux.conf" ]; then
-			bootloader="refind"
-		elif [ -f "/boot/limine.cfg" ]; then
-			bootloader="limine"
-		else
-			bootloader="unknown-uefi"
-		fi
-	else
-		if [ -f "/boot/grub/grub.cfg" ]; then
-			bootloader="grub-bios"
-		elif [ -f "/boot/limine.cfg" ]; then
-			bootloader="limine-bios"
-		else
-			bootloader="unknown-bios"
-		fi
-	fi
-	
+	local limine_config_path
+
 	gum_style --foreground="#8be9fd" "Current kernel: $current_kernel"
-	gum_style --foreground="#8be9fd" "Detected bootloader: $bootloader"
-	
-	echo "$bootloader"
+
+	# Check for Limine configuration
+	limine_config_path=$(find_limine_config)
+	if [ $? -eq 0 ]; then
+		gum_style --foreground="#50fa7b" "✓ Limine bootloader detected at: $limine_config_path"
+		echo "limine:$limine_config_path"
+		return 0
+	fi
+
+	# Check for other bootloaders and error out
+	if [ -f "/boot/loader/loader.conf" ]; then
+		gum_style --foreground="#ff5555" "✗ systemd-boot detected but not supported."
+		gum_style --foreground="#f1fa8c" "This script only supports Limine bootloader."
+		return 1
+	elif [ -f "/boot/grub/grub.cfg" ]; then
+		gum_style --foreground="#ff5555" "✗ GRUB detected but not supported."
+		gum_style --foreground="#f1fa8c" "This script only supports Limine bootloader."
+		return 1
+	elif [ -f "/boot/refind_linux.conf" ]; then
+		gum_style --foreground="#ff5555" "✗ rEFInd detected but not supported."
+		gum_style --foreground="#f1fa8c" "This script only supports Limine bootloader."
+		return 1
+	else
+		gum_style --foreground="#ff5555" "✗ No supported bootloader found."
+		gum_style --foreground="#f1fa8c" "This script requires Limine bootloader to be installed."
+		return 1
+	fi
 }
 
 # Function to show available kernel options
@@ -132,15 +154,15 @@ show_kernel_options() {
 	
 	# Create table data and pipe to gum table
 	{
-		echo "Option,Package,Description,Scheduler"
-		echo "1,linux-cachyos,Default CachyOS kernel - recommended for most users,BORE"
-		echo "2,linux-cachyos-lto,High-performance with Clang+ThinLTO and AutoFDO profiling,BORE"
-		echo "3,linux-cachyos-bore,BORE scheduler specific variant,BORE"
-		echo "4,linux-cachyos-bmq,BMQ scheduler from Project C (no sched-ext support),BMQ"
-		echo "5,linux-cachyos-lts,Long Term Support version for maximum stability,BORE"
-		echo "6,linux-cachyos-hardened,Security-focused with aggressive hardening patches,BORE"
-		echo "7,linux-cachyos-rt,Real-time preemption kernel (not for gaming),BORE"
-	} | gum_table --widths "8,25,50,15" \
+		echo "Package,Description,Scheduler"
+		echo "linux-cachyos,Default CachyOS kernel - recommended for most users,BORE"
+		echo "linux-cachyos-lto,High-performance with Clang+ThinLTO and AutoFDO profiling,BORE"
+		echo "linux-cachyos-bore,BORE scheduler specific variant,BORE"
+		echo "linux-cachyos-bmq,BMQ scheduler from Project C (no sched-ext support),BMQ"
+		echo "linux-cachyos-lts,Long Term Support version for maximum stability,BORE"
+		echo "linux-cachyos-hardened,Security-focused with aggressive hardening patches,BORE"
+		echo "linux-cachyos-rt,Real-time preemption kernel (not for gaming),BORE"
+	} | gum_table --widths "25,50,15" \
 		--header.foreground "#50fa7b" \
 		--cell.foreground "#f8f8f2" \
 		--print
@@ -212,163 +234,313 @@ regenerate_initramfs() {
 	fi
 }
 
-# Function to update bootloader configuration
-update_bootloader() {
-	local bootloader="$1"
-	
-	gum_style --foreground="#8be9fd" "Updating bootloader configuration..."
-	
-	case $bootloader in
-		"grub"|"grub-bios")
-			gum_style --foreground="#8be9fd" "Updating GRUB configuration..."
-			execute sudo grub-mkconfig -o /boot/grub/grub.cfg
-			if [ $? -eq 0 ]; then
-				gum_style --foreground="#50fa7b" "✓ GRUB configuration updated."
-			else
-				gum_style --foreground="#ff5555" "✗ Failed to update GRUB configuration."
-				return 1
+# Function to detect microcode
+detect_microcode() {
+	local microcode_file=""
+
+	# Check for AMD microcode
+	if [ -f "/boot/amd-ucode.img" ]; then
+		microcode_file="/boot/amd-ucode.img"
+	elif [ -f "/boot/intel-ucode.img" ]; then
+		microcode_file="/boot/intel-ucode.img"
+	fi
+
+	echo "$microcode_file"
+}
+
+# Function to detect LUKS encryption
+detect_luks_encryption() {
+	local root_device root_uuid luks_uuid luks_name
+
+	# Get the device containing the root filesystem
+	root_device=$(findmnt -n -o SOURCE /)
+
+	# Check if root is on a dm-crypt device (mapped device)
+	if [[ "$root_device" == /dev/mapper/* ]]; then
+		# Extract the mapper name
+		luks_name=$(basename "$root_device")
+
+		# Get the underlying LUKS device
+		local luks_device=$(cryptsetup status "$luks_name" 2>/dev/null | grep "device:" | awk '{print $2}')
+
+		if [ -n "$luks_device" ]; then
+			# Get the UUID of the LUKS device
+			luks_uuid=$(blkid -s UUID -o value "$luks_device" 2>/dev/null)
+
+			if [ -n "$luks_uuid" ]; then
+				echo "encrypted:$luks_uuid:$luks_name"
+				return 0
 			fi
+		fi
+	fi
+
+	# Check if we're using systemd-based encryption parameters
+	if grep -q "rd\.luks" /proc/cmdline 2>/dev/null; then
+		# Try to extract from current cmdline
+		local current_luks=$(grep -o "rd\.luks\.[^[:space:]]*" /proc/cmdline | head -1)
+		if [ -n "$current_luks" ]; then
+			echo "systemd-encrypted:$current_luks"
+			return 0
+		fi
+	fi
+
+	# Check if using legacy cryptdevice parameter
+	if grep -q "cryptdevice=" /proc/cmdline 2>/dev/null; then
+		local current_crypt=$(grep -o "cryptdevice=[^[:space:]]*" /proc/cmdline | head -1)
+		if [ -n "$current_crypt" ]; then
+			echo "legacy-encrypted:$current_crypt"
+			return 0
+		fi
+	fi
+
+	echo "unencrypted"
+	return 0
+}
+
+# Function to generate kernel command line for encryption
+generate_encryption_cmdline() {
+	local encryption_info="$1"
+	local root_uuid="$2"
+	local encryption_type="${encryption_info%%:*}"
+	local cmdline="root=UUID=$root_uuid"
+
+	case "$encryption_type" in
+		"encrypted")
+			local luks_uuid=$(echo "$encryption_info" | cut -d: -f2)
+			local luks_name=$(echo "$encryption_info" | cut -d: -f3)
+			cmdline="cryptdevice=UUID=$luks_uuid:$luks_name root=/dev/mapper/$luks_name"
 			;;
-		"systemd-boot")
-			gum_style --foreground="#8be9fd" "Updating systemd-boot entries..."
-			execute sudo bootctl update
-			if [ $? -eq 0 ]; then
-				gum_style --foreground="#50fa7b" "✓ systemd-boot updated."
-			else
-				gum_style --foreground="#ff5555" "✗ Failed to update systemd-boot."
-				return 1
-			fi
+		"systemd-encrypted")
+			# Use existing systemd parameters from current boot
+			local rd_luks=$(echo "$encryption_info" | cut -d: -f2-)
+			cmdline="$rd_luks root=UUID=$root_uuid"
 			;;
-		"limine"|"limine-bios")
-			gum_style --foreground="#8be9fd" "Updating Limine bootloader..."
-			if [ -f "/boot/limine.cfg" ]; then
-				gum_style --foreground="#50fa7b" "✓ Limine configuration detected."
-				gum_style --foreground="#f1fa8c" "Note: Limine should automatically detect the new kernel entries."
-				gum_style --foreground="#f1fa8c" "If needed, manually update /boot/limine.cfg with new kernel paths."
-			else
-				gum_style --foreground="#ff5555" "✗ Limine configuration file not found at /boot/limine.cfg"
-			fi
+		"legacy-encrypted")
+			# Use existing cryptdevice parameters from current boot
+			local cryptdev=$(echo "$encryption_info" | cut -d: -f2-)
+			cmdline="$cryptdev root=UUID=$root_uuid"
 			;;
-		"refind")
-			gum_style --foreground="#8be9fd" "rEFInd detected - configuration should update automatically."
-			gum_style --foreground="#f1fa8c" "Note: You may need to manually update refind_linux.conf if needed."
-			;;
-		*)
-			gum_style --foreground="#ff5555" "Unknown bootloader detected."
-			gum_style --foreground="#f1fa8c" "Please manually update your bootloader configuration."
+		"unencrypted")
+			cmdline="root=UUID=$root_uuid"
 			;;
 	esac
+
+	echo "$cmdline"
 }
 
-# Function to install optional packages
-install_optional_packages() {
-	gum_style --foreground="#ffb86c" "Installing recommended optional packages..."
-	
-	# Check if NVIDIA graphics are present
-	if lspci | grep -i nvidia > /dev/null; then
-		gum_style --foreground="#8be9fd" "NVIDIA GPU detected. Installing NVIDIA modules..."
-		execute sudo pacman -S --noconfirm nvidia-open nvidia-utils nvidia-settings
-		
-		# Add NVIDIA modules to initramfs if using NVIDIA
-		if grep -q "^MODULES=" /etc/mkinitcpio.conf; then
-			if ! grep -q "nvidia" /etc/mkinitcpio.conf; then
-				gum_style --foreground="#8be9fd" "Adding NVIDIA modules to initramfs..."
-				execute sudo sed -i '/^MODULES=/c\MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)' /etc/mkinitcpio.conf
-			fi
-		fi
-	fi
-	
-	# Install kernel manager for easy kernel management
-	gum_style --foreground="#8be9fd" "Installing CachyOS Kernel Manager..."
-	execute sudo pacman -S --noconfirm cachyos-kernel-manager
-	
-	if [ $? -eq 0 ]; then
-		gum_style --foreground="#50fa7b" "✓ CachyOS Kernel Manager installed."
-		gum_style --foreground="#f1fa8c" "You can use 'cachyos-kernel-manager' to manage kernels graphically."
-	fi
+# Function to get kernel suffix from installed package
+get_kernel_suffix() {
+	local kernel_package="$1"
+	local suffix=""
+
+	case "$kernel_package" in
+		"linux-cachyos")
+			suffix="linux-cachyos"
+			;;
+		"linux-cachyos-lto")
+			suffix="linux-cachyos-lto"
+			;;
+		"linux-cachyos-bore")
+			suffix="linux-cachyos-bore"
+			;;
+		"linux-cachyos-bmq")
+			suffix="linux-cachyos-bmq"
+			;;
+		"linux-cachyos-lts")
+			suffix="linux-cachyos-lts"
+			;;
+		"linux-cachyos-hardened")
+			suffix="linux-cachyos-hardened"
+			;;
+		"linux-cachyos-rt")
+			suffix="linux-cachyos-rt"
+			;;
+		*)
+			suffix="linux-cachyos"
+			;;
+	esac
+
+	echo "$suffix"
 }
 
-# Function to cleanup old kernels (optional)
-cleanup_old_kernels() {
-	gum_style --foreground="#ffb86c" "Checking for old kernels to clean up..."
-	
-	local installed_kernels=$(pacman -Q | grep "^linux " | wc -l)
-	local cachyos_kernels=$(pacman -Q | grep "^linux-cachyos" | wc -l)
-	
-	if [ "$installed_kernels" -gt 0 ] && [ "$cachyos_kernels" -gt 0 ]; then
-		gum_style --foreground="#f1fa8c" "Found both standard Linux and CachyOS kernels installed."
-		echo
-		
-		# Show installed kernels in a nice table
-		gum_style --foreground="#8be9fd" "Currently installed kernels:"
-		pacman -Q | grep -E "^linux(-cachyos)?(-[a-z]+)? " > /tmp/kernels_list.txt
-		if [ -s /tmp/kernels_list.txt ]; then
-			gum_table --columns "Package,Version" \
-				--widths "30,20" \
-				--header-foreground "#50fa7b" \
-				--cell-foreground "#f8f8f2" \
-				$(awk '{print $1 "," $2}' /tmp/kernels_list.txt)
-		fi
-		rm -f /tmp/kernels_list.txt
-		echo
-		
-		if gum_confirm --default=false "Would you like to remove the standard linux kernel?"; then
-			gum_style --foreground="#8be9fd" "Removing standard linux kernel..."
-			execute sudo pacman -Rns --noconfirm linux
-			gum_style --foreground="#50fa7b" "✓ Standard linux kernel removed."
-		fi
+# Function to create or update Limine configuration
+update_limine_config() {
+	local config_path="$1"
+	local kernel_package="$2"
+	local kernel_suffix=$(get_kernel_suffix "$kernel_package")
+	local microcode=$(detect_microcode)
+	local root_uuid
+	local config_dir=$(dirname "$config_path")
+
+	gum_style --foreground="#8be9fd" "Updating Limine configuration for $kernel_package..."
+
+	# Detect encryption setup
+	local encryption_info=$(detect_luks_encryption)
+	local encryption_type="${encryption_info%%:*}"
+
+	if [ "$encryption_type" != "unencrypted" ]; then
+		gum_style --foreground="#8be9fd" "Detected encrypted system: $encryption_type"
+	else
+		gum_style --foreground="#8be9fd" "Detected unencrypted system"
 	fi
-}
 
-# Function to show post-installation information
-show_post_install_info() {
-	local installed_kernel="$1"
-	
-	gum_style --foreground="#50fa7b" "🎉 CachyOS kernel installation completed successfully!"
-	echo
-	gum_style --foreground="#ffb86c" "Installed kernel: $installed_kernel"
-	echo
-	
-	# Create post-installation info using gum pager
-	cat << EOF > /tmp/post_install_info.txt
-POST-INSTALLATION NOTES:
+	# Get root partition UUID
+	if [ "$encryption_type" = "encrypted" ]; then
+		# For LUKS, get the UUID of the decrypted device
+		local luks_name=$(echo "$encryption_info" | cut -d: -f3)
+		root_uuid=$(blkid -s UUID -o value "/dev/mapper/$luks_name" 2>/dev/null)
+	else
+		# For unencrypted or other setups, get the filesystem UUID
+		root_uuid=$(findmnt -n -o UUID /)
+	fi
 
-✓ Reboot your system to use the new kernel
-✓ Use 'uname -r' to verify the active kernel after reboot
-✓ Use 'cachyos-kernel-manager' for graphical kernel management
-✓ Check 'journalctl -b' if you encounter any boot issues
+	if [ -z "$root_uuid" ]; then
+		gum_style --foreground="#ff5555" "✗ Could not determine root partition UUID"
+		return 1
+	fi
 
-PERFORMANCE TIPS:
+	# Create config directory if it doesn't exist
+	if [ ! -d "$config_dir" ]; then
+		gum_style --foreground="#8be9fd" "Creating Limine config directory: $config_dir"
+		execute sudo mkdir -p "$config_dir"
+	fi
 
-• Consider enabling zram if not already enabled
-• Check CachyOS wiki for additional optimizations
-• Monitor system performance with tools like 'htop' or 'btop'
-• Use 'scx_loader' to manage sched-ext schedulers (if supported)
+	# Backup existing config if it exists
+	if [ -f "$config_path" ]; then
+		gum_style --foreground="#8be9fd" "Backing up existing configuration..."
+		execute sudo cp "$config_path" "${config_path}.backup-$(date +%Y%m%d-%H%M%S)"
+	fi
 
-TROUBLESHOOTING:
+	# Create new Limine configuration
+	local temp_config="/tmp/limine.conf.new"
+	cat > "$temp_config" << EOF
+timeout: 0
+quiet: yes
 
-• If boot fails, select the old kernel from bootloader menu
-• Check dmesg for kernel-related messages: 'dmesg | grep -i error'
-• Verify bootloader configuration is correct
-• Ensure initramfs was generated properly
-
-NEXT STEPS:
-
-• Explore CachyOS optimizations and tweaks
-• Consider installing additional CachyOS packages
-• Join the CachyOS community for support and updates
+/$kernel_package
+    protocol: linux
+    kernel_path: boot():/vmlinuz-$kernel_suffix
 EOF
 
-	gum_pager --style.border="rounded" --style.border.foreground="#bd93f9" < /tmp/post_install_info.txt
-	rm -f /tmp/post_install_info.txt
-	echo
-	
-	if gum_confirm --default=false "Would you like to reboot now?"; then
-		gum_style --foreground="#ff5555" "Rebooting system in 5 seconds..."
-		gum_spin --spinner dot --title "Preparing for reboot..." -- sleep 5
-		sudo reboot
+	# Add microcode if available
+	if [ -n "$microcode" ]; then
+		echo "    module_path: boot():$microcode" >> "$temp_config"
+	fi
+
+	# Add initramfs
+	echo "    module_path: boot():/initramfs-$kernel_suffix.img" >> "$temp_config"
+
+	# Generate appropriate kernel command line based on encryption
+	local base_cmdline=$(generate_encryption_cmdline "$encryption_info" "$root_uuid")
+	echo "    cmdline: $base_cmdline rw quiet splash" >> "$temp_config"
+
+	# Add fallback entry
+	cat >> "$temp_config" << EOF
+
+/$kernel_package (Fallback)
+    protocol: linux
+    kernel_path: boot():/vmlinuz-$kernel_suffix
+EOF
+
+	# Add microcode for fallback if available
+	if [ -n "$microcode" ]; then
+		echo "    module_path: boot():$microcode" >> "$temp_config"
+	fi
+
+	# Add fallback initramfs
+	echo "    module_path: boot():/initramfs-$kernel_suffix-fallback.img" >> "$temp_config"
+	# Use same encryption cmdline for fallback but without quiet/splash
+	echo "    cmdline: $base_cmdline rw" >> "$temp_config"
+
+	# Validate configuration syntax
+	if validate_limine_config "$temp_config"; then
+		# Copy new configuration
+		execute sudo cp "$temp_config" "$config_path"
+		execute sudo chmod 644 "$config_path"
+		rm -f "$temp_config"
+		gum_style --foreground="#50fa7b" "✓ Limine configuration updated successfully."
 	else
-		gum_style --foreground="#f1fa8c" "Please remember to reboot to use the new kernel."
+		gum_style --foreground="#ff5555" "✗ Configuration validation failed."
+		rm -f "$temp_config"
+		return 1
+	fi
+}
+
+# Function to validate Limine configuration
+validate_limine_config() {
+	local config_file="$1"
+
+	# Basic syntax validation
+	if [ ! -f "$config_file" ]; then
+		return 1
+	fi
+
+	# Check for required fields
+	if ! grep -q "kernel_path:" "$config_file"; then
+		gum_style --foreground="#ff5555" "Missing kernel_path in configuration"
+		return 1
+	fi
+
+	if ! grep -q "protocol:" "$config_file"; then
+		gum_style --foreground="#ff5555" "Missing protocol in configuration"
+		return 1
+	fi
+
+	# Verify kernel files exist
+	local kernel_path=$(grep "kernel_path:" "$config_file" | head -1 | cut -d: -f2- | sed 's/boot():/\/boot/' | tr -d ' ')
+	if [ ! -f "$kernel_path" ]; then
+		gum_style --foreground="#ff5555" "Kernel file not found: $kernel_path"
+		return 1
+	fi
+
+	# Verify initramfs files exist
+	local initramfs_paths=$(grep "module_path:.*initramfs" "$config_file" | cut -d: -f2- | sed 's/boot():/\/boot/' | tr -d ' ')
+	for initramfs_path in $initramfs_paths; do
+		if [ ! -f "$initramfs_path" ]; then
+			gum_style --foreground="#ff5555" "Initramfs file not found: $initramfs_path"
+			return 1
+		fi
+	done
+
+	return 0
+}
+
+# Function to update bootloader configuration
+update_bootloader() {
+	local bootloader_info="$1"
+	local kernel_package="$2"
+	local bootloader_type="${bootloader_info%%:*}"
+	local config_path="${bootloader_info#*:}"
+
+	gum_style --foreground="#8be9fd" "Updating Limine bootloader configuration..."
+
+	if [ "$bootloader_type" = "limine" ]; then
+		gum_style --foreground="#8be9fd" "Limine configuration path: $config_path"
+
+		# Update or create Limine configuration
+		update_limine_config "$config_path" "$kernel_package"
+		if [ $? -ne 0 ]; then
+			return 1
+		fi
+
+		# Try to use limine-mkinitcpio for automatic entry management
+		if command -v limine-mkinitcpio >/dev/null 2>&1; then
+			gum_style --foreground="#8be9fd" "Running limine-mkinitcpio to regenerate entries..."
+			execute sudo limine-mkinitcpio
+			if [ $? -eq 0 ]; then
+				gum_style --foreground="#50fa7b" "✓ Limine entries regenerated successfully."
+			else
+				gum_style --foreground="#f1fa8c" "Warning: limine-mkinitcpio failed, but manual config was created."
+			fi
+		else
+			gum_style --foreground="#f1fa8c" "limine-mkinitcpio not found - using manual configuration."
+			gum_style --foreground="#8be9fd" "Consider installing limine-mkinitcpio-hook from AUR for automatic updates."
+		fi
+
+		gum_style --foreground="#50fa7b" "✓ Bootloader configuration completed."
+	else
+		gum_style --foreground="#ff5555" "✗ Unsupported bootloader: $bootloader_type"
+		return 1
 	fi
 }
 
@@ -420,7 +592,10 @@ main() {
 	echo
 	
 	# Detect current system setup
-	local bootloader=$(detect_current_setup)
+	local bootloader_info=$(detect_current_setup)
+	if [ $? -ne 0 ]; then
+		return 1
+	fi
 	echo
 	
 	# Update package database
@@ -434,13 +609,13 @@ main() {
 	
 	# Get user choice using gum choose
 	local kernel_options=(
-		"1 - linux-cachyos (Recommended)"
-		"2 - linux-cachyos-lto (High Performance)"
-		"3 - linux-cachyos-bore"
-		"4 - linux-cachyos-bmq"
-		"5 - linux-cachyos-lts"
-		"6 - linux-cachyos-hardened"
-		"7 - linux-cachyos-rt"
+		"linux-cachyos (Recommended)"
+		"linux-cachyos-lto (High Performance)"
+		"linux-cachyos-bore"
+		"linux-cachyos-bmq"
+		"linux-cachyos-lts"
+		"linux-cachyos-hardened"
+		"linux-cachyos-rt"
 	)
 	
 	local selected_option=$(gum_choose --height=10 --header="Select kernel variant:" "${kernel_options[@]}")
@@ -453,28 +628,19 @@ main() {
 		return 1
 	fi
 	echo
-	
+
 	# Regenerate initramfs
 	regenerate_initramfs
 	if [ $? -ne 0 ]; then
 		return 1
 	fi
 	echo
-	
-	# Update bootloader
-	update_bootloader "$bootloader"
-	echo
-	
-	# Install optional packages
-	install_optional_packages
-	echo
-	
-	# Cleanup old kernels (optional)
-	cleanup_old_kernels
-	echo
-	
-	# Show post-installation information
-	show_post_install_info "$installed_kernel"
+
+	# Update bootloader configuration with kernel package info
+	update_bootloader "$bootloader_info" "$installed_kernel"
+	if [ $? -ne 0 ]; then
+		return 1
+	fi
 }
 
 main "$@"
