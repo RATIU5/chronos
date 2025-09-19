@@ -4,9 +4,6 @@ CHRONOS_REPO="${CHRONOS_REPO:-RATIU5/chronos}"
 
 clear
 
-readonly RED='\033[0;31m'
-readonly NC='\033[0m'
-
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }

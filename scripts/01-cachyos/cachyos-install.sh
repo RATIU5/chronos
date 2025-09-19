@@ -1,57 +1,26 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -o errexit
 set -o nounset
 set -o pipefail
 
-readonly SCRIPT_NAME="$(basename "$0")"
-readonly LOG_FILE="/var/log/cachyos-transform.log"
-readonly TEMP_DIR="/tmp/cachyos-transform-$$"
+SCRIPT_NAME="$(basename "$0")"
+LOG_FILE="/var/log/cachyos-transform.log"
+TEMP_DIR="/tmp/cachyos-transform-$$"
 
-readonly KERNEL_PACKAGES=(
+KERNEL_PACKAGES=(
     "linux-cachyos"
     "linux-cachyos-headers"
 )
 
-readonly SYSTEM_PACKAGES=(
+SYSTEM_PACKAGES=(
     "cachyos-settings"
     "chwd"
 )
 
-readonly OPTIONAL_PACKAGES=(
+OPTIONAL_PACKAGES=(
     "cachyos-rate-mirrors"
 )
-
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly NC='\033[0m'
-
-#################################################################################
-# Logging Functions
-#################################################################################
-
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $*" | tee -a "$LOG_FILE"
-}
-
-info() {
-    echo -e "${BLUE}[INFO]${NC} $*" | tee -a "$LOG_FILE"
-}
-
-success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $*" | tee -a "$LOG_FILE"
-}
-
-warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $*" | tee -a "$LOG_FILE"
-}
-
-error() {
-    echo -e "${RED}[ERROR]${NC} $*" >&2
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - ERROR: $*" >> "$LOG_FILE"
-}
 
 #################################################################################
 # Error Handling
