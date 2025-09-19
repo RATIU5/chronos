@@ -1,16 +1,5 @@
 #!/bin/bash
 
-set_pacman_conf() {
-	local key="$1"
-	local value="$2"
-	local conf_file="/etc/pacman.conf"
-	if sudo grep -qE "^#?\s*${key}" "$conf_file"; then
-		sudo sed -i "s/^#?\s*${key}.*/${value}/" "$conf_file"
-	else
-		sudo bash -c "echo '${value}' >> ${conf_file}"
-	fi
-}
-
 main() {
 	gum_style --foreground="#ffb86c" "Adding CachyOS repository manually..."
 
@@ -204,12 +193,6 @@ EOF
 		gum_style --foreground="#8be9fd" "Rating CachyOS mirrors for best performance..."
 		if gum_spin --spinner dot --title "Finding fastest CachyOS mirrors..." -- bash -c "rate-mirrors cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist > /dev/null"; then
 			gum_style --foreground="#50fa7b" "✓ CachyOS mirrors updated successfully."
-			
-			# Copy to v3/v4 mirrorlists if they exist
-			if [ -f "/etc/pacman.d/cachyos-v3-mirrorlist" ]; then
-				execute sudo cp /etc/pacman.d/cachyos-mirrorlist /etc/pacman.d/cachyos-v3-mirrorlist
-				gum_style --foreground="#50fa7b" "✓ Updated cachyos-v3-mirrorlist."
-			fi
 			if [ -f "/etc/pacman.d/cachyos-v4-mirrorlist" ]; then
 				execute sudo cp /etc/pacman.d/cachyos-mirrorlist /etc/pacman.d/cachyos-v4-mirrorlist
 				gum_style --foreground="#50fa7b" "✓ Updated cachyos-v4-mirrorlist."
