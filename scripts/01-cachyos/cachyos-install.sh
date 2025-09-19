@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+#################################################################################
+# CachyOS Minimal Transformation Script
+# Transforms a clean Arch Linux installation into a minimal CachyOS system
+# 
+# This script uses the official CachyOS repository script and adds only the 
+# essential components missing for a complete minimal transformation:
+# - CachyOS kernel installation
+# - Hardware detection and driver setup
+# - System optimizations
+#################################################################################
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -142,7 +153,8 @@ install_cachyos_repositories() {
     info "Executing: sudo ./cachyos-repo.sh --install"
     
     # Use timeout to prevent hanging and capture all output
-    if script_output=$(timeout 300 sudo ./cachyos-repo.sh --install 2>&1); then
+    # Use 'yes' to automatically answer prompts with 'y'
+    if script_output=$(timeout 300 bash -c 'yes | sudo ./cachyos-repo.sh --install' 2>&1); then
         script_exit_code=0
     else
         script_exit_code=$?
@@ -282,7 +294,8 @@ run_cachyos_script_without_keys() {
     
     chmod +x "$modified_script"
     
-    if sudo "./$modified_script" --install; then
+    # Use 'yes' to automatically answer prompts with 'y'
+    if timeout 300 bash -c "yes | sudo ./$modified_script --install" 2>&1; then
         success "Modified CachyOS script completed successfully"
         return 0
     else
