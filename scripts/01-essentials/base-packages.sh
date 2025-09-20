@@ -1,4 +1,4 @@
-printf "1\n%.0s" {1..20} | sudo yay -Syu --noconfirm --needed \
+sudo yay -Syu --needed \
 autoconf-archive \
 base \
 base-devel \
