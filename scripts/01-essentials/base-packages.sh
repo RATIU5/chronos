@@ -4,7 +4,6 @@ base \
 base-devel \
 broadcom-wl \
 btrfs-progs \
-dart \
 dkms \
 egl-wayland \
 git \
@@ -22,7 +21,6 @@ limine \
 limine-mkinitcpio-hook \
 limine-snapper-sync \
 linux-firmware \
-macbook12-spi-driver-dkms \
 nvidia-open-dkms \
 nvidia-utils \
 lib32-nvidia-utils \
