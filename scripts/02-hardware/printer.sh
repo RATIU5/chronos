@@ -1,5 +1,5 @@
 # Install CUPS packages
-pacman -S --noconfirm cups cups-browsed avahi
+sudo pacman -S --noconfirm cups cups-browsed avahi
 
 chrootable_systemctl_enable cups.service
 
