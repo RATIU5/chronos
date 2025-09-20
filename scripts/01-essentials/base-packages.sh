@@ -1,4 +1,4 @@
-sudo pacman -Syu --noconfirm --needed \
+sudo yay -Syu --noconfirm --needed \
 autoconf-archive \
 base \
 base-devel \
@@ -10,7 +10,7 @@ egl-wayland \
 git \
 gst-plugin-pipewire \
 gtk4-layer-shell \
-top \
+btop \
 intltool \
 iwd \
 jdk-openjdk \
