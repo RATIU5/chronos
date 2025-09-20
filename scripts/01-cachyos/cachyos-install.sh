@@ -59,6 +59,62 @@ trap cleanup EXIT
 # Validation Functions
 #################################################################################
 
+check_if_already_installed() {
+    gum_style --foreground="#8be9fd" "Checking if CachyOS is already installed..."
+
+    local errors=0
+    local warnings=0
+
+    # Check if CachyOS kernel is running
+    if uname -r | grep -q "cachyos"; then
+        gum_style --foreground="#50fa7b" "✓ CachyOS kernel is currently running"
+    else
+        gum_style --foreground="#f1fa8c" "! CachyOS kernel not currently running"
+        ((warnings++))
+    fi
+
+    # Check if CachyOS kernel package is installed
+    if pacman -Q linux-cachyos &> /dev/null; then
+        gum_style --foreground="#50fa7b" "✓ CachyOS kernel package installed"
+    else
+        gum_style --foreground="#f1fa8c" "! CachyOS kernel package not found"
+        ((errors++))
+    fi
+
+    # Check repositories
+    if grep -q "cachyos" /etc/pacman.conf; then
+        gum_style --foreground="#50fa7b" "✓ CachyOS repositories configured"
+    else
+        gum_style --foreground="#f1fa8c" "! CachyOS repositories not configured"
+        ((errors++))
+    fi
+
+    # Check keyring
+    if pacman -Q cachyos-keyring &> /dev/null; then
+        gum_style --foreground="#50fa7b" "✓ CachyOS keyring installed"
+    else
+        gum_style --foreground="#f1fa8c" "! CachyOS keyring not found"
+        ((errors++))
+    fi
+
+    # Evaluate results
+    if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
+        gum_style --foreground="#50fa7b" --bold "✓ CachyOS is already fully installed and configured!"
+    elif [[ $errors -eq 0 ]]; then
+        gum_style --foreground="#f1fa8c" --bold "⚠ CachyOS appears to be installed but with minor issues ($warnings warnings)"
+        gum_style --foreground="#8be9fd" "You may want to reboot to use the CachyOS kernel if not already running"
+        read -p "Continue with installation anyway? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            gum_style --foreground="#8be9fd" "Installation cancelled by user"
+            exit 0
+        fi
+    else
+        gum_style --foreground="#8be9fd" "CachyOS installation incomplete ($errors errors, $warnings warnings)"
+        gum_style --foreground="#8be9fd" "Proceeding with installation..."
+    fi
+}
+
 check_requirements() {
     # Check if running as root (should NOT be root)
     if [[ $EUID -eq 0 ]]; then
@@ -639,8 +695,11 @@ EOF
 
 main() {
     log "Starting CachyOS installation script"
-    
+
     gum_style --foreground="#bd93f9" --bold --border="rounded" --padding="1" "=== CachyOS Minimal Transformation Script ==="
+    gum_style --foreground="#8be9fd" "Phase 0: Installation status check"
+    check_if_already_installed
+
     gum_style --foreground="#8be9fd" "Phase 1: System validation"
     check_requirements
     
@@ -662,8 +721,6 @@ main() {
     gum_style --foreground="#8be9fd" "Phase 6: Verification"
     if verify_installation; then
         gum_style --foreground="#50fa7b" "CachyOS installation completed successfully!"
-				gum_style --foreground="#50fa7b" "Please reboot to start using your new CachyOS system"
-				exit 0
     else
         error "Installation completed with issues - check the log"
         exit 1
