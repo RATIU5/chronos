@@ -19,7 +19,7 @@ source $CHRONOS_PATH/scripts/02-hardware/bluetooth.sh
 source $CHRONOS_PATH/scripts/02-hardware/printer.sh
 source $CHRONOS_PATH/scripts/02-hardware/usb-autosuspend.sh
 source $CHRONOS_PATH/scripts/02-hardware/fix-f13-amd-audio-input.sh
-source $CHRONOS_PATH/scripts/02-hardware/fix-apple-bcm4360.sh
+source $CHRONOS_PATH/scripts/02-hardware/fix-apple-bcm-4360.sh
 source $CHRONOS_PATH/scripts/02-hardware/fix-apple-spi-keyboard.sh
 source $CHRONOS_PATH/scripts/02-hardware/fix-apple-t2.sh
 source $CHRONOS_PATH/scripts/02-hardware/studio-display.sh
