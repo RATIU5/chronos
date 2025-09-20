@@ -100,6 +100,7 @@ check_if_already_installed() {
     # Evaluate results
     if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
         gum_style --foreground="#50fa7b" --bold "✓ CachyOS is already fully installed and configured!"
+        return 0
     elif [[ $errors -eq 0 ]]; then
         gum_style --foreground="#f1fa8c" --bold "⚠ CachyOS appears to be installed but with minor issues ($warnings warnings)"
         gum_style --foreground="#8be9fd" "You may want to reboot to use the CachyOS kernel if not already running"
@@ -107,11 +108,14 @@ check_if_already_installed() {
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             gum_style --foreground="#8be9fd" "Installation cancelled by user"
-            exit 0
+            return 0
+        else
+            return 1
         fi
     else
         gum_style --foreground="#8be9fd" "CachyOS installation incomplete ($errors errors, $warnings warnings)"
         gum_style --foreground="#8be9fd" "Proceeding with installation..."
+        return 1
     fi
 }
 
@@ -698,7 +702,9 @@ main() {
 
     gum_style --foreground="#bd93f9" --bold --border="rounded" --padding="1" "=== CachyOS Minimal Transformation Script ==="
     gum_style --foreground="#8be9fd" "Phase 0: Installation status check"
-    check_if_already_installed
+    if check_if_already_installed; then
+        return 0
+    fi
 
     gum_style --foreground="#8be9fd" "Phase 1: System validation"
     check_requirements
