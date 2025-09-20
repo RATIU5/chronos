@@ -1,4 +1,4 @@
-sudo pacman -S --noconfirm --needed \
+sudo yay -S --noconfirm --needed \
 1password-beta \
 1password-cli \
 avahi \
