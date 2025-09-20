@@ -1,4 +1,4 @@
-sudo pacman -Sy --noconfirm --needed \
+sudo pacman -Syu --noconfirm --needed \
 autoconf-archive \
 base \
 base-devel \
