@@ -41,4 +41,5 @@ apple-t2-audio-config \
 linux-t2 \
 linux-t2-headers \
 t2fanrd \
-tiny-dfr 
+tiny-dfr \
+usbutils

@@ -1,7 +1,5 @@
-#!/bin/bash
-
 if command -v yay &> /dev/null; then
-    echo "yay is already installed. Version: $(yay --version | head -n1)"
+    gum_style --foreground="#50fa7b" "yay is already installed. moving on..."
 else
     echo "Installing yay AUR helper..."
 

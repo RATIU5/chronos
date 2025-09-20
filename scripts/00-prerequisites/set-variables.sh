@@ -14,9 +14,6 @@ EOF
 CHRONOS_GITHUB_USERNAME=${CHRONOS_GITHUB_USERNAME:-""}
 CHRONOS_GITHUB_EMAIL=${CHRONOS_GITHUB_EMAIL:-""}
 
-gum_style --foreground="#ff5555" --bold --italic --width=58 --align="center" \
-	"Let's begin. First, answer a couple questions."	
-
 echo ""
 
 if [[ -z "$CHRONOS_GITHUB_USERNAME" ]]; then
