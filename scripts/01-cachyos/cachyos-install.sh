@@ -593,39 +593,6 @@ verify_installation() {
     fi
 }
 
-#################################################################################
-# Information Display
-#################################################################################
-
-show_completion_info() {
-    echo ""
-    echo "==============================================================================="
-    gum_style --foreground="#50fa7b" --border="rounded" --padding="1" --margin="1" "✓ CachyOS installation completed successfully!"
-    echo "==============================================================================="
-    echo ""
-    gum_style --foreground="#8be9fd" "What was installed:"
-    echo "  • CachyOS optimized repositories (with architecture detection)" | tee -a "$LOG_FILE"
-    echo "  • CachyOS kernel with BORE scheduler and performance optimizations" | tee -a "$LOG_FILE"
-    echo "  • Hardware detection and driver management (chwd)" | tee -a "$LOG_FILE"
-    echo "  • System-level performance optimizations (cachyos-settings)" | tee -a "$LOG_FILE"
-    echo "  • Optimized package mirrors" | tee -a "$LOG_FILE"
-    echo "" | tee -a "$LOG_FILE"
-    gum_style --foreground="#ff5555" --bold "CRITICAL: You MUST reboot to use the CachyOS kernel!"
-    echo "" | tee -a "$LOG_FILE"
-    gum_style --foreground="#8be9fd" "After reboot:"
-    echo "  • Verify kernel: uname -r" | tee -a "$LOG_FILE"
-    echo "  • Check available drivers: chwd --list" | tee -a "$LOG_FILE"
-    echo "  • Update system: pacman -Syu" | tee -a "$LOG_FILE"
-    echo "" | tee -a "$LOG_FILE"
-    gum_style --foreground="#8be9fd" "Useful commands:"
-    echo "  • chwd --autoconfigure    - Auto-configure all hardware" | tee -a "$LOG_FILE"
-    echo "  • chwd --list                 - List available driver profiles" | tee -a "$LOG_FILE"
-    echo "  • chwd -i [profile]       - Install specific driver profile" | tee -a "$LOG_FILE"
-    echo "  • rate-mirrors cachyos    - Re-optimize mirror rankings" | tee -a "$LOG_FILE"
-    echo ""
-    echo "==============================================================================="
-}
-
 show_help() {
     cat << EOF
 CachyOS Minimal Transformation Script
@@ -672,7 +639,7 @@ EOF
 #################################################################################
 
 main() {
-    log "Starting CachyOS transformation script"
+    log "Starting CachyOS installation script"
     
     gum_style --foreground="#bd93f9" --bold --border="rounded" --padding="1" "=== CachyOS Minimal Transformation Script ==="
     gum_style --foreground="#8be9fd" "Phase 1: System validation"
@@ -695,7 +662,9 @@ main() {
     
     gum_style --foreground="#8be9fd" "Phase 6: Verification"
     if verify_installation; then
-        show_completion_info
+        gum_style --foreground="#50fa7b" "CachyOS installation completed successfully!"
+				gum_style --foreground="#50fa7b" "Please reboot to start using your new CachyOS system"
+				exit 0
     else
         error "Installation completed with issues - check the log"
         exit 1

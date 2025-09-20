@@ -519,3 +519,15 @@ gum_filter() { run_gum filter "$@"; }
 gum_pager() { run_gum pager "$@"; }
 gum_table() { run_gum table "$@"; }
 gum_write() { run_gum write "$@"; }
+
+# Starting the installer with CHRONOS_CHROOT_INSTALL=1 will put it into chroot mode
+chrootable_systemctl_enable() {
+  if [ -n "${CHRONOS_CHROOT_INSTALL:-}" ]; then
+    sudo systemctl enable $1
+  else
+    sudo systemctl enable --now $1
+  fi
+}
+
+# Export the function so it's available in subshells
+export -f chrootable_systemctl_enable
