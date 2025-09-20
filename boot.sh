@@ -5,7 +5,7 @@ CHRONOS_REPO="${CHRONOS_REPO:-RATIU5/chronos}"
 clear
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "\033[0;31m[ERROR]\033[0m $1"
 }
 
 if ! command -v pacman &> /dev/null; then
