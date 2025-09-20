@@ -1,4 +1,4 @@
-sudo yay -Syu --noconfirm --needed --answerdiff None --answerclean None \
+printf "1\n%.0s" {1..20} | sudo yay -Syu --noconfirm --needed \
 autoconf-archive \
 base \
 base-devel \
