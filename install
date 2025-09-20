@@ -11,6 +11,7 @@ source "$CHRONOS_PATH/scripts/00-prerequisites/set-variables.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/yay-install.sh"
 
 source "$CHRONOS_PATH/scripts/01-essentials/cachyos-install.sh"
+source "$CHRONOS_PATH/scripts/01-essentials/root-packages.sh"
 source "$CHRONOS_PATH/scripts/01-essentials/base-packages.sh"
 
 source $CHRONOS_PATH/scripts/02-hardware/network.sh
