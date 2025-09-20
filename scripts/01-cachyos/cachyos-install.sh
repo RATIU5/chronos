@@ -17,7 +17,6 @@ set -o pipefail
 
 # Source functions
 CHRONOS_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "$CHRONOS_PATH/lib/functions.sh"
 
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly TEMP_DIR="/tmp/cachyos-transform-$$"
