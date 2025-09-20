@@ -10,7 +10,8 @@ source "$CHRONOS_PATH/scripts/00-prerequisites/gum-install.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/set-variables.sh"
 source "$CHRONOS_PATH/scripts/00-prerequisites/yay-install.sh"
 
-source "$CHRONOS_PATH/scripts/01-cachyos/cachyos-install.sh"
+source "$CHRONOS_PATH/scripts/01-essentials/cachyos-install.sh"
+source "$CHRONOS_PATH/scripts/01-essentials/base-packages.sh"
 
 source $CHRONOS_PATH/scripts/02-hardware/network.sh
 source $CHRONOS_PATH/scripts/02-hardware/set-wireless-regdom.sh
