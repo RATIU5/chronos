@@ -46,7 +46,7 @@ fi
 # Limine bootloader must be installed and configured
 if ! command -v limine-install >/dev/null; then
 	abort "limine bootloader to be installed"
-elif [[ ! -f /boot/EFI/limine/limine.cfg ]] && [[ ! -f /boot/limine.cfg ]]; then
+elif [[ ! -f /boot/EFI/limine/limine.conf ]] && [[ ! -f /boot/limine.conf ]]; then
 	abort "limine configuration to be present"
 fi
 
