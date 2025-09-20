@@ -1,4 +1,4 @@
-sudo yay -Syu --needed < /dev/tty \
+sudo yay -Syu --noconfirm --needed \
 autoconf-archive \
 base \
 base-devel \
@@ -23,7 +23,6 @@ limine-mkinitcpio-hook \
 limine-snapper-sync \
 linux-firmware \
 macbook12-spi-driver-dkms \
-nvidia-dkms \
 nvidia-open-dkms \
 nvidia-utils \
 lib32-nvidia-utils \
