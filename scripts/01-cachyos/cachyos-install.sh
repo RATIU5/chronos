@@ -732,7 +732,7 @@ main() {
         exit 1
     fi
     
-    log "CachyOS transformation script completed"
+    log "CachyOS installation script completed"
 }
 
 #################################################################################
