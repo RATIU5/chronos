@@ -1,4 +1,4 @@
-sudo yay -Syu --needed --noconfirm < /dev/tty \
+sudo yay -Syu --needed < /dev/tty \
 autoconf-archive \
 base \
 base-devel \
