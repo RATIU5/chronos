@@ -1,4 +1,4 @@
-sudo yay -Syu --noconfirm --needed --noprovides --answerdiff None --answerclean None \
+sudo yay -Syu --noconfirm --needed --answerdiff None --answerclean None \
 autoconf-archive \
 base \
 base-devel \
