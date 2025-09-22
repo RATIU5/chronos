@@ -34,8 +34,6 @@ check_requirements() {
 }
 
 install_cachyos_repositories() {
-	info "Setting up CachyOS repositories"
-
 	mkdir -p "$TEMP_DIR"
 	cd "$TEMP_DIR"
 
@@ -58,7 +56,6 @@ install_cachyos_repositories() {
 
 install_packages() {
 	local packages=("$@")
-	info "Installing packages: ${packages[*]}"
 
 	execute sudo pacman -Sy
 
@@ -68,8 +65,6 @@ install_packages() {
 }
 
 configure_system() {
-	info "Configuring system for CachyOS"
-
 	execute sudo mkinitcpio -P
 
 	if command -v limine-install &>/dev/null; then
@@ -84,8 +79,6 @@ configure_system() {
 }
 
 verify_installation() {
-	info "Verifying installation"
-
 	if ! pacman -Q linux-cachyos &>/dev/null; then
 		error "CachyOS kernel not installed"
 		return 1
@@ -105,27 +98,22 @@ check_existing_installation() {
 
 	if pacman -Q linux-cachyos &>/dev/null; then
 		kernel_installed=true
-		info "CachyOS kernel already installed"
 	fi
 
 	if grep -q "cachyos" /etc/pacman.conf; then
 		repo_configured=true
-		info "CachyOS repositories already configured"
 	fi
 
 	if [[ "$kernel_installed" == true && "$repo_configured" == true ]]; then
 		success "CachyOS is already fully installed"
-		info "Run 'sudo pacman -Syu' to update if needed"
 		return 3
 	fi
 
 	if [[ "$kernel_installed" == true ]]; then
-		info "Kernel installed, skipping kernel installation"
 		return 1
 	fi
 
 	if [[ "$repo_configured" == true ]]; then
-		info "Repositories configured, skipping repository setup"
 		return 2
 	fi
 
@@ -146,7 +134,6 @@ main() {
 		configure_system
 		verify_installation
 		success "CachyOS installation completed successfully"
-		info "Reboot required to use CachyOS kernel"
 		;;
 	1)
 		check_requirements
@@ -154,7 +141,6 @@ main() {
 		configure_system
 		verify_installation
 		success "CachyOS installation completed successfully"
-		info "Reboot required to use CachyOS kernel"
 		;;
 	2)
 		check_requirements
@@ -163,7 +149,6 @@ main() {
 		configure_system
 		verify_installation
 		success "CachyOS installation completed successfully"
-		info "Reboot required to use CachyOS kernel"
 		;;
 	3)
 		# Already fully installed - do nothing and continue
