@@ -104,27 +104,25 @@ check_existing_installation() {
 
 	if [[ "$kernel_installed" == true && "$repo_configured" == true ]]; then
 		success "CachyOS is already fully installed"
-		return 1
+		echo "true"
 	fi
 
 	if [[ "$kernel_installed" == true ]]; then
-		return 0
+		echo "false"
 	fi
 
 	if [[ "$repo_configured" == true ]]; then
-		return 0
+		echo "false"
 	fi
 
-	return 0
+	echo "false"
 }
 
 main() {
-	check_existing_installation
-
-	local install_status=$?
+	local install_status=$(check_existing_installation)
 
 	case $install_status in
-	0)
+	"false")
 		check_requirements
 		install_cachyos_repositories
 		install_packages "${KERNEL_PACKAGES[@]}"
@@ -133,7 +131,7 @@ main() {
 		verify_installation
 		success "CachyOS installation completed successfully"
 		;;
-	1)
+	"true")
 		# Already fully installed - do nothing and continue
 		;;
 	esac
