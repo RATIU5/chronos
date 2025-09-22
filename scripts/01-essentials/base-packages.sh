@@ -69,6 +69,11 @@ polkit-gnome \
 postgresql-libs \
 power-profiles-daemon \
 qt5-wayland \
+qt5-svg \
+qt5-imageformats \
+qt5-multimedia \
+qt6-5compat \
+quickshell \
 ripgrep \
 satty \
 slurp \
@@ -79,6 +84,7 @@ system-config-printer \
 tldr \
 typora \
 tzupdate \
+walker \
 ufw \
 ufw-docker \
 unzip \
@@ -94,4 +100,5 @@ wl-screenrec \
 xdg-desktop-portal-gtk \
 xdg-desktop-portal-hyprland \
 xmlstarlet \
-zoxide
+zoxide \
+zsh
