@@ -9,7 +9,7 @@ readonly SYSTEM_PACKAGES=("cachyos-settings" "chwd")
 cleanup() {
 	[[ -d "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"
 }
-trap cleanup EXIT
+#trap cleanup EXIT
 
 check_requirements() {
 	if [[ $EUID -eq 0 ]]; then
