@@ -1,1 +1,1 @@
-chsh -s /usr/bin/zsh
+sudo chsh -s /usr/bin/zsh $(whoami)
