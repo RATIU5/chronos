@@ -135,7 +135,6 @@ main() {
 		;;
 	1)
 		# Already fully installed - do nothing and continue
-		return 0
 		;;
 	esac
 }
