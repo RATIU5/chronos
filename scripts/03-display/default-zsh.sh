@@ -1,1 +1,1 @@
-sudo chsh -s /usr/bin/zsh
+chsh -s /usr/bin/zsh

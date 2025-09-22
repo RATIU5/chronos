@@ -26,6 +26,6 @@ TimeoutStopSec=30
 WantedBy=default.target
 EOF
 
-sudo systemctl --user daemon-reload
+systemctl --user daemon-reload
 
-sudo systemctl --user enable hyprland-autostart.service
+systemctl --user enable hyprland-autostart.service
