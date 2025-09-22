@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
-
 readonly TEMP_DIR="/tmp/cachyos-transform-$$"
 readonly KERNEL_PACKAGES=("linux-cachyos" "linux-cachyos-headers")
 readonly SYSTEM_PACKAGES=("cachyos-settings" "chwd")
