@@ -166,7 +166,8 @@ main() {
 		info "Reboot required to use CachyOS kernel"
 		;;
 	3)
-		# Already fully installed
+		# Already fully installed - do nothing and continue
+		return 0
 		;;
 	esac
 }
