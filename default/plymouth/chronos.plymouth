@@ -1,0 +1,11 @@
+[Plymouth Theme]
+Name=Chronos
+Description=Chronos splash screen.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/chronos
+ScriptFile=/usr/share/plymouth/themes/chronos/chronos.script
+ConsoleLogBackgroundColor=0x000000
+MonospaceFont=Cantarell 11
+Font=Cantarell 11

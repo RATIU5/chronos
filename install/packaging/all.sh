@@ -1,0 +1,1 @@
+run_logged $CHRONOS_INSTALL/packaging/base.sh
