@@ -129,7 +129,7 @@ exit_handler() {
 	if [[ $exit_code -ne 0 && $ERROR_HANDLING != true ]]; then
 		catch_errors
 	else
-		stop_log_outputs
+		stop_log_output
 		show_cursor
 	fi
 }
