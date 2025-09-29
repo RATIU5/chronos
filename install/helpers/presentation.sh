@@ -11,9 +11,10 @@ if [ -e /dev/tty ]; then
 		export TERM_HEIGHT=$(echo "$TERM_SIZE" | cut -d' ' -f1)
 		export TERM_WIDTH=$(echo "$TERM_SIZE" | cut -d' ' -f2)
 	else
-	# Fallback to reasonable defaults if stty fails
-	export TERM_HEIGHT=80
-	export TERM_WIDTH=24
+		# Fallback to reasonable defaults if stty fails
+		export TERM_HEIGHT=80
+		export TERM_WIDTH=24
+	fi
 else
 	# No terminal available (e.g., non-interactive environment)
 	export TERM_HEIGHT=80
