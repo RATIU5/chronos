@@ -1,0 +1,227 @@
+# Chronos Plymouth Theme Script
+
+# ----------------------------------------- Background Setup --------------------------------
+
+# Set pure black background
+Window.SetBackgroundTopColor(0.0, 0.0, 0.0);
+Window.SetBackgroundBottomColor(0.0, 0.0, 0.0);
+
+# ----------------------------------------- Global Variables --------------------------------
+
+global.logo = [];
+global.dialog = [];
+global.progress_bar = [];
+global.progress_box = [];
+global.status = "normal";
+
+# ----------------------------------------- Logo Setup --------------------------------------
+
+logo.image = Image("logo.png");
+
+# Calculate target height as percentage of screen height
+logo.target_height = Window.GetHeight() * 0.08;  # 8% of screen height
+
+# Calculate scale factor to maintain aspect ratio
+logo.aspect_ratio = logo.image.GetWidth() / logo.image.GetHeight();
+logo.target_width = logo.target_height * logo.aspect_ratio;
+
+# Scale the logo
+logo.scaled_image = logo.image.Scale(logo.target_width, logo.target_height);
+logo.sprite = Sprite(logo.scaled_image);
+
+# Center the logo horizontally, position at 42% from top
+logo.x = (Window.GetWidth() - logo.target_width) / 2;
+logo.y = Window.GetHeight() * 0.42;
+logo.sprite.SetPosition(logo.x, logo.y, 10);
+logo.sprite.SetOpacity(1);
+
+# ----------------------------------------- Progress Bar Setup --------------------------------
+
+progress_box.image = Image("progress_box.png");
+
+# Set target width as percentage of screen width
+progress_box.target_width = Window.GetWidth() * 0.18;  # 18% of screen width
+
+# Calculate height maintaining aspect ratio
+progress_box.aspect_ratio = progress_box.image.GetWidth() / progress_box.image.GetHeight();
+progress_box.target_height = progress_box.target_width / progress_box.aspect_ratio;
+
+# Scale progress box
+progress_box.scaled_image = progress_box.image.Scale(progress_box.target_width, progress_box.target_height);
+progress_box.sprite = Sprite(progress_box.scaled_image);
+
+# Position progress bar below the logo
+progress_box.x = (Window.GetWidth() - progress_box.target_width) / 2;
+progress_box.y = logo.y + logo.target_height + Window.GetHeight() * 0.05;
+progress_box.sprite.SetPosition(progress_box.x, progress_box.y, 10);
+
+# Progress bar fill
+progress_bar.original_image = Image("progress_bar.png");
+progress_bar.sprite = Sprite();
+
+# Scale progress bar to match box dimensions
+progress_bar.full_image = progress_bar.original_image.Scale(progress_box.target_width, progress_box.target_height);
+
+progress_bar.x = progress_box.x;
+progress_bar.y = progress_box.y;
+progress_bar.sprite.SetPosition(progress_bar.x, progress_bar.y, 11);
+
+# Initialize with minimal width
+progress_bar.current_image = progress_bar.full_image.Scale(1, progress_box.target_height);
+progress_bar.sprite.SetImage(progress_bar.current_image);
+
+# ----------------------------------------- Progress Callback --------------------------------
+
+fun progress_callback(duration, progress) {
+    local.new_width = Math.Int(progress_box.target_width * progress);
+    
+    if (new_width < 1) {
+        new_width = 1;
+    }
+    
+    progress_bar.current_image = progress_bar.full_image.Scale(new_width, progress_box.target_height);
+    progress_bar.sprite.SetImage(progress_bar.current_image);
+}
+
+Plymouth.SetBootProgressFunction(progress_callback);
+
+# ----------------------------------------- Password Dialog Setup --------------------------------
+
+lock.image = Image("lock.png");
+entry.image = Image("entry.png");
+bullet.image = Image("bullet.png");
+
+# Scale lock icon: 6% of screen height
+lock.target_height = Window.GetHeight() * 0.06;
+lock.aspect_ratio = lock.image.GetWidth() / lock.image.GetHeight();
+lock.target_width = lock.target_height * lock.aspect_ratio;
+lock.scaled_image = lock.image.Scale(lock.target_width, lock.target_height);
+
+lock.sprite = Sprite(lock.scaled_image);
+lock.x = (Window.GetWidth() - lock.target_width) / 2;
+lock.y = Window.GetHeight() * 0.42;
+lock.sprite.SetPosition(lock.x, lock.y, 10001);
+lock.sprite.SetOpacity(0);
+
+# Scale entry field: 25% of screen width
+entry.target_width = Window.GetWidth() * 0.25;
+entry.aspect_ratio = entry.image.GetWidth() / entry.image.GetHeight();
+entry.target_height = entry.target_width / entry.aspect_ratio;
+entry.scaled_image = entry.image.Scale(entry.target_width, entry.target_height);
+
+entry.sprite = Sprite(entry.scaled_image);
+entry.x = (Window.GetWidth() - entry.target_width) / 2;
+entry.y = lock.y + lock.target_height + Window.GetHeight() * 0.03;
+entry.sprite.SetPosition(entry.x, entry.y, 10001);
+entry.sprite.SetOpacity(0);
+
+# Scale bullet: 25% of entry height
+bullet.target_height = entry.target_height * 0.25;
+bullet.aspect_ratio = bullet.image.GetWidth() / bullet.image.GetHeight();
+bullet.target_width = bullet.target_height * bullet.aspect_ratio;
+bullet.scaled_image = bullet.image.Scale(bullet.target_width, bullet.target_height);
+
+# Bullet array
+bullet.sprites = [];
+
+global.dialog.lock = lock;
+global.dialog.entry = entry;
+global.dialog.bullet = bullet;
+
+# ----------------------------------------- Dialog Functions --------------------------------
+
+fun hide_password_dialog() {
+    lock.sprite.SetOpacity(0);
+    entry.sprite.SetOpacity(0);
+    for (index = 0; bullet.sprites[index]; index++) {
+        bullet.sprites[index].SetOpacity(0);
+    }
+}
+
+fun show_password_dialog() {
+    lock.sprite.SetOpacity(1);
+    entry.sprite.SetOpacity(1);
+}
+
+fun display_normal_callback() {
+    global.status = "normal";
+    hide_password_dialog();
+    
+    # Show logo and progress bar during normal boot
+    logo.sprite.SetOpacity(1);
+    progress_box.sprite.SetOpacity(1);
+    progress_bar.sprite.SetOpacity(1);
+}
+
+fun display_password_callback(prompt, bullets) {
+    global.status = "password";
+    
+    # Hide boot progress elements
+    logo.sprite.SetOpacity(0);
+    progress_box.sprite.SetOpacity(0);
+    progress_bar.sprite.SetOpacity(0);
+    
+    # Show password dialog
+    show_password_dialog();
+    
+    # Display password bullets - LEFT ALIGNED with padding
+    local.bullet_spacing = bullet.target_width * 1.3;  # 30% spacing between bullets
+    local.left_padding = entry.target_width * 0.08;  # 8% padding from left
+    
+    for (index = 0; bullet.sprites[index] || index < bullets; index++) {
+        if (!bullet.sprites[index]) {
+            bullet.sprites[index] = Sprite(bullet.scaled_image);
+            
+            # Left-aligned bullets with padding
+            local.bullet_x = entry.x + left_padding + (index * bullet_spacing);
+            local.bullet_y = entry.y + (entry.target_height - bullet.target_height) / 2;
+            bullet.sprites[index].SetPosition(bullet_x, bullet_y, 10002);
+        }
+        
+        if (index < bullets) {
+            bullet.sprites[index].SetOpacity(1);
+        } else {
+            bullet.sprites[index].SetOpacity(0);
+        }
+    }
+}
+
+fun display_message_callback(text) {
+    # Display messages
+    local.message_image = Image.Text(text, 1.0, 1.0, 1.0);
+    
+    if (!global.message_sprite) {
+        global.message_sprite = Sprite();
+    }
+    
+    global.message_sprite.SetImage(message_image);
+    global.message_sprite.SetPosition(
+        (Window.GetWidth() - message_image.GetWidth()) / 2,
+        Window.GetHeight() * 0.92,
+        100
+    );
+}
+
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+Plymouth.SetMessageFunction(display_message_callback);
+
+# ----------------------------------------- Refresh Callback --------------------------------
+
+fun refresh_callback() {
+    # Keep display updated
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# ----------------------------------------- Quit Callback --------------------------------
+
+fun quit_callback() {
+    # Graceful fade for smooth transition to display manager
+    logo.sprite.SetOpacity(0);
+    progress_bar.sprite.SetOpacity(0);
+    progress_box.sprite.SetOpacity(0);
+    hide_password_dialog();
+}
+
+Plymouth.SetQuitFunction(quit_callback);

@@ -1,0 +1,1 @@
+source $CHRONOS_INSTALL/post-install/finished.sh
