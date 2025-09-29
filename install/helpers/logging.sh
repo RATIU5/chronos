@@ -119,7 +119,7 @@ run_logged() {
 	echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $script" >>"$CHRONOS_INSTALL_LOG_FILE"
 
 	# Use bash -c to create a clean subshell
-	bash -c "source '$script'" <//null >>"$CHRONOS_INSTALL_LOG_FILE" 2>&1
+	bash -c "source '$script'" </dev/null >>"$CHRONOS_INSTALL_LOG_FILE" 2>&1
 
 	local exit_code=$?
 
