@@ -74,8 +74,6 @@ noto-fonts-extra
 nss-mdns
 nvim
 obsidian
-omarchy-chromium
-omarchy-lazyvim
 pamixer
 playerctl
 plocate
@@ -85,7 +83,6 @@ postgresql-libs
 power-profiles-daemon
 python-gobject
 python-poetry-core
-python-terminaltexteffects
 qt6-5compat
 qt5-imageformats
 qt5-multimedia
