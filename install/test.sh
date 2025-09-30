@@ -1,1 +1,1 @@
-grep -v '^#' "~/.local/share/chronos/install/chronos-base.packages" | grep -v '^$' | while read -r package; do pacman -Si "$package" 2>/dev/null | grep -E "^(Name|Repository)" | paste - -; done | grep -i cachy
+grep -v '^#' "./chronos-base.packages" | grep -v '^$' | while read -r package; do pacman -Si "$package" 2>/dev/null | grep -E "^(Name|Repository)" | paste - -; done | grep -i cachy
