@@ -1,9 +1,6 @@
 # Chronos core package list installed via install/packages.sh
 # This file is also used by the ISO builder when determining needs
 
-1password-beta
-1password-cli
-asdcontrol-git
 bash-completion
 blueberry
 brightnessctl
@@ -23,23 +20,11 @@ noto-fonts-emoji
 noto-fonts-extra
 nvim
 obsidian
-omarchy-chromium
-omarchy-lazyvim
 power-profiles-daemon
 python-gobject
 python-poetry-core
-python-terminaltexteffects
 tldr
-ttf-cascadia-mono-nerd
-ttf-ia-writer
-ttf-jetbrains-mono-nerd
-typora
-tzupdate
 ufw
-ufw-docker
 uwsm
-walker-bin
 wireless-regdb
-wl-screenrec
 woff2-font-awesome
-yaru-icon-theme
