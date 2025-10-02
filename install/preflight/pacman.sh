@@ -5,7 +5,6 @@ if [[ -n ${CHRONOS_ONLINE_INSTALL:-} ]]; then
 	PACMAN_CONF="/etc/pacman.conf"
 
 	# Copy default pacman configuration files
-	sudo cp -f ~/.local/share/chronos/default/pacman/pacman.conf /etc/pacman.conf
 	sudo cp -f ~/.local/share/chronos/default/pacman/mirrorlist /etc/pacman.d/mirrorlist
 
 	echo "=== Starting pacman.conf update ==="
