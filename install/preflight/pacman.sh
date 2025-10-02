@@ -7,8 +7,6 @@ if [[ -n ${CHRONOS_ONLINE_INSTALL:-} ]]; then
 	# Copy default pacman configuration files
 	sudo cp -f ~/.local/share/chronos/default/pacman/mirrorlist /etc/pacman.d/mirrorlist
 
-	echo "=== Starting pacman.conf update ==="
-
 	# Uncomment multilib section
 	if grep -q "^[[:space:]]*#[[:space:]]*\[multilib\]" "$PACMAN_CONF"; then
 		echo "Uncommenting [multilib] section..."
@@ -19,7 +17,6 @@ if [[ -n ${CHRONOS_ONLINE_INSTALL:-} ]]; then
 	fi
 
 	# Uncomment options in the Misc options section
-	echo "Uncommenting Color, ILoveCandy, VerbosePkgLists..."
 	sudo sed -i 's/^#Color$/Color/' "$PACMAN_CONF"
 	sudo sed -i 's/^#ILoveCandy$/ILoveCandy/' "$PACMAN_CONF"
 	sudo sed -i 's/^#VerbosePkgLists$/VerbosePkgLists/' "$PACMAN_CONF"
@@ -32,8 +29,6 @@ if [[ -n ${CHRONOS_ONLINE_INSTALL:-} ]]; then
 		echo "SigLevel = Optional TrustAll" | sudo tee -a "$PACMAN_CONF" > /dev/null
 		echo "Server = https://pkgs.omarchy.org/\$arch" | sudo tee -a "$PACMAN_CONF" > /dev/null
 	fi
-
-	echo "=== Pacman.conf update complete ==="
 
 	# Configure pacman
 	sudo pacman -Syu --noconfirm
