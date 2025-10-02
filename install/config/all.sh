@@ -7,7 +7,7 @@ run_logged $CHRONOS_INSTALL/config/increase-lockout-limit.sh
 run_logged $CHRONOS_INSTALL/config/ssh-flakiness.sh
 run_logged $CHRONOS_INSTALL/config/detect-keyboard-layout.sh
 run_logged $CHRONOS_INSTALL/config/xcompose.sh
-run_logged $CHRONOS_INSTALL/config/mise-work.sh
+run_logged $CHRONOS_INSTALL/config/mise-developer.sh
 run_logged $CHRONOS_INSTALL/config/fix-powerprofilesctl-shebang.sh
 run_logged $CHRONOS_INSTALL/config/docker.sh
 run_logged $CHRONOS_INSTALL/config/mimetypes.sh
