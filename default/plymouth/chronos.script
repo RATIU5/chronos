@@ -103,8 +103,8 @@ lock.y = Window.GetHeight() * 0.42;
 lock.sprite.SetPosition(lock.x, lock.y, 10001);
 lock.sprite.SetOpacity(0);
 
-# Scale entry field: 25% of screen width
-entry.target_width = Window.GetWidth() * 0.25;
+# Scale entry field: 5% of screen width
+entry.target_width = Window.GetWidth() * 0.05;
 entry.aspect_ratio = entry.image.GetWidth() / entry.image.GetHeight();
 entry.target_height = entry.target_width / entry.aspect_ratio;
 entry.scaled_image = entry.image.Scale(entry.target_width, entry.target_height);
