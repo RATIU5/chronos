@@ -30,7 +30,7 @@ Scope {
         Rectangle {
           width: 20
           height: 20
-          radius: 4
+          color: "#1e1e2e"
 
           Text {
             anchors.centerIn: parent
