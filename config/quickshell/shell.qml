@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 
@@ -54,6 +55,13 @@ Scope {
             topPadding: 3
             rightPadding: 1
           }
+        }
+
+        Text {
+          text: `${Toplevel.title}`
+          font.family: Fonts.displayRegular.name
+          font.pixelSize: 14
+          color: "#e0e0e0"
         }
 
         Item {
