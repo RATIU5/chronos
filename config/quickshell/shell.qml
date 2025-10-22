@@ -48,7 +48,7 @@ Scope {
             font.styleName: "Medium"
             color: "#cdd6f4"
             font.pixelSize: 12
-            leftPadding: 12
+            leftPadding: 20
           }
         }
 
