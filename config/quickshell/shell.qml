@@ -51,7 +51,7 @@ Scope {
             font.bold: true
             color: "#e0e0e0"
             font.pixelSize: 12
-            topPadding: 5
+            topPadding: 3
             rightPadding: 1
           }
         }
