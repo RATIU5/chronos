@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Quickshell
+Exec=quickshell
+Terminal=false
+Categories=Utility;

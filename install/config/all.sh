@@ -1,4 +1,5 @@
 run_logged $CHRONOS_INSTALL/config/config.sh
+run_logged $CHRONOS_INSTALL/config/applications.sh
 run_logged $CHRONOS_INSTALL/config/git.sh
 run_logged $CHRONOS_INSTALL/config/gpg.sh
 run_logged $CHRONOS_INSTALL/config/timezones.sh

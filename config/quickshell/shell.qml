@@ -5,9 +5,7 @@ import QtQuick.Layouts
 
 Scope {
   id: root
-
-  Time {}
-
+  
   Variants {
     model: Quickshell.screens
 
