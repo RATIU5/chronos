@@ -58,7 +58,7 @@ Scope {
         }
 
         Text {
-          text: `${Toplevel.title}`
+          text: `${Toplevel.appId}`
           font.family: Fonts.displayRegular.name
           font.pixelSize: 14
           color: "#e0e0e0"
