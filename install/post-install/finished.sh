@@ -6,7 +6,7 @@ echo_in_style() {
 
 clear
 echo 
-tte -i ~/.local/share/chronos/logo.txt --canvas-width 0 --anchor-text c --frame-rate 920 print
+tte -i ~/.local/share/chronos/install/logo.txt --canvas-width 0 --anchor-text c --frame-rate 920 print
 echo
 
 # Display installation time if available
