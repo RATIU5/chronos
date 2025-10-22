@@ -13,12 +13,10 @@ Item {
   property bool focusingThisMonitor: HyprlandData.activeWorkspace?.monitor == monitor?.name
   property var biggestWindow: HyprlandData.biggestWindowForWorkspace(HyprlandData.monitors[root.monitor?.id]?.activeWorkspace.id)
 
-  ColumnLayout {
-    id: colLayout
+  RowLayout {
+    id: rowLayout
 
-    anchors.verticalCenter: parent.verticalCenter
-    anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.horizontalCenter: parent.horizontalCenter
     spacing: -4
 
     Text {
