@@ -31,7 +31,6 @@ Scope {
           width: 30
           height: 30
           color: "#1e1e2e"
-          leftPadding: 8
 
           Image {
             anchors.centerIn: parent
