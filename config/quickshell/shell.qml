@@ -47,9 +47,6 @@ Scope {
             smooth: true
           }
 
-          ActiveWindow {
-
-          }
         }
 
         Text {
@@ -59,6 +56,8 @@ Scope {
           font.bold: true
           color: "#e0e0e0"
         }
+        
+        ActiveWindow {}
 
         Item {
           Layout.fillWidth: true
