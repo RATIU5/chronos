@@ -26,14 +26,14 @@ Scope {
         anchors.fill: parent
         anchors.leftMargin: 8
         anchors.rightMargin: 8
+        anchors.topMargin: 3
+        anchors.bottomMargin: 3
         spacing: 8
 
         Rectangle {
           width: 36
           height: 36
           color: "#121212"
-          topPadding: 3
-          bottomPadding: 3
 
           Image {
             anchors.centerIn: parent
