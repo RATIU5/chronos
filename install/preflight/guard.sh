@@ -52,10 +52,8 @@ if ! lsblk -f | grep -q "crypto_LUKS\|crypt"; then
 	abort "Disk encryption with LUKS"
 fi
 
-# Limine bootloader must be installed and configured
-if ! command -v limine-install &>/dev/null; then
-	abort "Limine bootloader installed"
-elif ! locate_limine_config >/dev/null; then
+# Limine bootloader must be configured
+if ! locate_limine_config >/dev/null; then
 	abort "Limine bootloader configured"
 fi
 

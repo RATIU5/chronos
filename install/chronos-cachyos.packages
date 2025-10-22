@@ -43,6 +43,7 @@ lazygit
 less
 libyaml
 libqalculate
+limine
 llvm
 mako
 mariadb-libs
