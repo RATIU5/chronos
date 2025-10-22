@@ -1,8 +1,11 @@
+import qs.modules
+
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
+
 
 Scope {
   id: root
@@ -46,7 +49,7 @@ Scope {
           }
 
           ActiveWindow.Item {
-            
+
           }
         }
 
