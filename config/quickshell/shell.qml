@@ -32,9 +32,18 @@ Scope {
           height: 20
           color: "#1e1e2e"
 
+          Image {
+            anchors.centerIn: parent
+            source: "qrc:assets/desktop.svg"
+            width: 20
+            height: 20
+            sourceSize: Qt.size(width, height)
+            smooth: true
+          }
+
           Text {
             anchors.centerIn: parent
-            text: Hyprland.focusedWorkspace?.id
+            text: `${Hyprland.focusedWorkspace?.id}`
             color: "#cdd6f4"
             font.pixelSize: 12
           }
