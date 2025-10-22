@@ -27,28 +27,16 @@ Scope {
         anchors.margins: 8
         spacing: 8
 
-        Repeater {
-          model: Hyprland.workspaces
+        Rectangle {
+          width: 20
+          height: 20
+          radius: 4
 
-          Rectangle {
-            required property var modelData
-            width: 20
-            height: 20
-            radius: 4
-
-            color: modelData.id === Hyprland.focusedWorkspace?.id ? "#89fabc" : "#45475a"
-
-            Text {
-              anchors.centerIn: parent
-              text: parent.modelData.id
-              color: "#cdd6f4"
-              font.pixelSize: 12
-            }
-
-            MouseArea {
-              anchors.fill: parent
-              onClicked: parent.modelData.activate()
-            }
+          Text {
+            anchors.centerIn: parent
+            text: Hyprland.focusedWorkspace?.id
+            color: "#cdd6f4"
+            font.pixelSize: 12
           }
         }
 
