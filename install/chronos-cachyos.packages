@@ -45,7 +45,6 @@ libyaml
 libqalculate
 limine
 llvm
-mako
 mariadb-libs
 mise
 mpv
@@ -72,7 +71,6 @@ swayosd
 system-config-printer
 tree-sitter-cli
 unzip
-waybar
 wf-recorder
 whois
 wiremix
