@@ -21,7 +21,7 @@ Item {
     anchors.right: parent.right
     spacing: -4
 
-    StyledText {
+    Text {
       Layout.fillWidth: true
       font.pixelSize: 14
       color: "#e0e0e0"
@@ -30,7 +30,7 @@ Item {
         (root.biggestWindow?.class) ?? "Desktop"
     }
 
-    StyledText {
+    Text {
       Layout.fillWidth: true
       font.pixelSize: 14
       color: "#e0e0e0"
