@@ -24,7 +24,8 @@ Scope {
 
       RowLayout {
         anchors.fill: parent
-        anchors.margins: 8
+        anchors.leftMargin: 8
+        anchors.rightMargin: 8
         spacing: 8
 
         Rectangle {
