@@ -49,18 +49,12 @@ Scope {
             font.styleName: "Bold"
             color: "#e0e0e0"
             font.pixelSize: 12
+            paddingTop: 6
           }
         }
 
         Item {
           Layout.fillWidth: true
-        }
-
-        Text {
-          anchors.centerIn: parent
-          text: Time.time
-          color: "#cdd6f4"
-          font.pixelSize: 14
         }
       }
     }
