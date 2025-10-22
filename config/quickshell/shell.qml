@@ -36,7 +36,7 @@ Scope {
             height: 20
             radius: 4
 
-            color: modelData.id === Hyprland.focusedWorkspace?.id ? "#89b4fa" : "#45475a"
+            color: modelData.id === Hyprland.focusedWorkspace?.id ? "#89fabc" : "#45475a"
 
             Text {
               anchors.centerIn: parent

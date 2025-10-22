@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CHRONOS_PATH="$HOME/.local/share/chronos"
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -24,7 +26,7 @@ if git pull; then
     done
     
     # Copy bashrc
-    cp "$CHRONOS_PATH/default/bashrc" "$HOME/.bashrc"
+    cp "$CHRONOS_DIR/default/bashrc" "$HOME/.bashrc"
     echo -e "${GREEN}✓${NC} Updated ~/.bashrc"
     
     echo ""
