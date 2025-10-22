@@ -49,7 +49,7 @@ Scope {
             font.bold: true
             color: "#e0e0e0"
             font.pixelSize: 12
-            topPadding: 6
+            topPadding: 4
           }
         }
 
