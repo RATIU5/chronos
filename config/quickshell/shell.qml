@@ -31,6 +31,7 @@ Scope {
           width: 30
           height: 30
           color: "#1e1e2e"
+          leftPadding: 8
 
           Image {
             anchors.centerIn: parent
@@ -39,7 +40,6 @@ Scope {
             height: 26
             sourceSize: Qt.size(width, height)
             smooth: true
-            leftPadding: 8
           }
 
           Text {
@@ -49,7 +49,6 @@ Scope {
             font.styleName: "Medium"
             color: "#cdd6f4"
             font.pixelSize: 12
-            leftPadding: 8
           }
         }
 
