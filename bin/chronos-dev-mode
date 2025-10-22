@@ -1,0 +1,149 @@
+#!/bin/bash
+
+CHRONOS_DIR="$HOME/.local/share/chronos"
+DEV_MODE_MARKER="$CHRONOS_DIR/.dev-mode-enabled"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+print_status() {
+    if [ -f "$DEV_MODE_MARKER" ]; then
+        echo -e "${GREEN}Dev mode is ENABLED${NC}"
+        echo ""
+        echo "Symlinked configs:"
+        for config_dir in "$CHRONOS_DIR"/config/*; do
+            dir_name=$(basename "$config_dir")
+            if [ -L "$HOME/.config/$dir_name" ]; then
+                echo -e "  ${GREEN}✓${NC} ~/.config/$dir_name"
+            else
+                echo -e "  ${RED}✗${NC} ~/.config/$dir_name (not symlinked)"
+            fi
+        done
+        
+        if [ -L "$HOME/.bashrc" ]; then
+            echo -e "  ${GREEN}✓${NC} ~/.bashrc"
+        else
+            echo -e "  ${RED}✗${NC} ~/.bashrc (not symlinked)"
+        fi
+        
+        echo ""
+        echo "To sync configs: cd $CHRONOS_DIR && git pull"
+    else
+        echo -e "${YELLOW}Dev mode is DISABLED${NC}"
+        echo ""
+        echo "Configs are independent copies (prod mode)"
+        echo "To enable dev mode: chronos-dev-mode enable"
+    fi
+}
+
+enable_dev_mode() {
+    if [ -f "$DEV_MODE_MARKER" ]; then
+        echo -e "${YELLOW}Dev mode is already enabled${NC}"
+        exit 0
+    fi
+    
+    echo "Enabling dev mode..."
+    echo ""
+    
+    # Create config directory if it doesn't exist
+    mkdir -p "$HOME/.config"
+    
+    # Symlink each config directory
+    for config_dir in "$CHRONOS_DIR"/config/*; do
+        if [ -e "$config_dir" ]; then
+            dir_name=$(basename "$config_dir")
+            target_path="$HOME/.config/$dir_name"
+            
+            # Remove existing file/directory
+            if [ -e "$target_path" ] || [ -L "$target_path" ]; then
+                rm -rf "$target_path"
+            fi
+            
+            # Create symlink
+            ln -sf "$config_dir" "$target_path"
+            echo -e "${GREEN}✓${NC} Linked ~/.config/$dir_name"
+        fi
+    done
+    
+    # Symlink bashrc
+    if [ -e "$HOME/.bashrc" ] || [ -L "$HOME/.bashrc" ]; then
+        rm -f "$HOME/.bashrc"
+    fi
+    ln -sf "$CHRONOS_DIR/default/bashrc" "$HOME/.bashrc"
+    echo -e "${GREEN}✓${NC} Linked ~/.bashrc"
+    
+    # Create marker file
+    touch "$DEV_MODE_MARKER"
+    
+    echo ""
+    echo -e "${GREEN}Dev mode enabled!${NC}"
+    echo ""
+    echo "Your configs are now symlinked to the git repo."
+    echo "To sync changes: cd $CHRONOS_DIR && git pull"
+}
+
+disable_dev_mode() {
+    if [ ! -f "$DEV_MODE_MARKER" ]; then
+        echo -e "${YELLOW}Dev mode is already disabled${NC}"
+        exit 0
+    fi
+    
+    echo "Disabling dev mode..."
+    echo ""
+    
+    # Copy each config directory (convert symlinks to copies)
+    for config_dir in "$CHRONOS_DIR"/config/*; do
+        if [ -e "$config_dir" ]; then
+            dir_name=$(basename "$config_dir")
+            target_path="$HOME/.config/$dir_name"
+            
+            # If it's a symlink, replace with actual copy
+            if [ -L "$target_path" ]; then
+                rm "$target_path"
+                cp -R "$config_dir" "$target_path"
+                echo -e "${GREEN}✓${NC} Copied ~/.config/$dir_name"
+            fi
+        fi
+    done
+    
+    # Copy bashrc
+    if [ -L "$HOME/.bashrc" ]; then
+        rm "$HOME/.bashrc"
+        cp "$CHRONOS_DIR/default/bashrc" "$HOME/.bashrc"
+        echo -e "${GREEN}✓${NC} Copied ~/.bashrc"
+    fi
+    
+    # Remove marker file
+    rm "$DEV_MODE_MARKER"
+    
+    echo ""
+    echo -e "${GREEN}Prod mode enabled!${NC}"
+    echo ""
+    echo "Your configs are now independent copies."
+    echo "Changes to the git repo will not affect your system."
+}
+
+# Main command handling
+case "$1" in
+    enable)
+        enable_dev_mode
+        ;;
+    disable)
+        disable_dev_mode
+        ;;
+    status)
+        print_status
+        ;;
+    *)
+        echo "Usage: chronos-dev-mode {enable|disable|status}"
+        echo ""
+        echo "Commands:"
+        echo "  enable   - Link configs to git repo (dev mode)"
+        echo "  disable  - Copy configs from git repo (prod mode)"
+        echo "  status   - Show current mode"
+        exit 1
+        ;;
+esac
