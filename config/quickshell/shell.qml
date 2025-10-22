@@ -6,7 +6,6 @@ import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 
-
 Scope {
   id: root
   
@@ -48,7 +47,7 @@ Scope {
             smooth: true
           }
 
-          ActiveWindow.Item {
+          ActiveWindow {
 
           }
         }
