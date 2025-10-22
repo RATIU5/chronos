@@ -46,10 +46,10 @@ Scope {
             anchors.centerIn: parent
             text: `${Hyprland.focusedWorkspace?.id}`
             font.family: Fonts.displayRegular.name
-            font.styleName: "Bold"
+            font.bold: true
             color: "#e0e0e0"
             font.pixelSize: 12
-            paddingTop: 6
+            topPadding: 6
           }
         }
 
