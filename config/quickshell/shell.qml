@@ -59,13 +59,7 @@ Scope {
           }
         }
 
-        Text {
-          text: `${Hyprland.activeToplevel?.appId ?? "Desktop"}`
-          font.family: Fonts.displayRegular.name
-          font.pixelSize: 14
-          font.bold: true
-          color: "#e0e0e0"
-        }
+        ActiveWindow {}
 
         Item {
           Layout.fillWidth: true
