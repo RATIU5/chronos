@@ -64,7 +64,7 @@ Item {
   
   Text {
     font.pixelSize: 14
-    font.bold = true
+    font.bold: true
     color: "#e0e0e0"
     text: root.cachedAppName
   }
