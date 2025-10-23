@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Ghostty
+Exec=ghostty
+Terminal=false
+Categories=Utility;
