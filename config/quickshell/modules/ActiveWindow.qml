@@ -8,7 +8,7 @@ Item {
   
   // Helper function to get app name from desktop entries
   function getAppName(appId) {
-    if (!appId) return "Desktop"
+    if (!appId) return "Desktop2"
     
     // Try to find a matching desktop entry
     var entry = DesktopEntries.byId(appId)
@@ -21,12 +21,11 @@ Item {
   }
     
   Text {
-    Layout.fillWidth: true
     font.pixelSize: 14
     color: "#e0e0e0"
     text: {
       var toplevel = Hyprland.activeToplevel
-      if (!toplevel) return "Desktop"
+      if (!toplevel) return "Desktop1"
       
       // Try appId first, then try looking at the title as a fallback
       var appId = toplevel.appId
