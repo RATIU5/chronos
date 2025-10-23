@@ -46,17 +46,26 @@ Scope {
             sourceSize: Qt.size(width, height)
             smooth: true
           }
+          
+          Text {
+            anchors.centerIn: parent
+            text: `${Hyprland.focusedWorkspace?.id}`
+            font.family: Fonts.displayRegular.name
+            font.bold: true
+            color: "#e0e0e0"
+            font.pixelSize: 12
+            topPadding: 3
+            rightPadding: 1
+          }
         }
 
         Text {
-          text: `${Toplevel.appId}`
+          text: `${Hyprland.activeToplevel?.appId ?? "Desktop"}`
           font.family: Fonts.displayRegular.name
           font.pixelSize: 14
           font.bold: true
           color: "#e0e0e0"
         }
-
-        ActiveWindow {}
 
         Item {
           Layout.fillWidth: true
