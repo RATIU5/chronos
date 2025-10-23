@@ -6,6 +6,7 @@ import Quickshell.Hyprland
 
 Item {
   id: root
+  implicitHeight: 36
   
   property string cachedAppName: "Desktop"
   
@@ -20,7 +21,6 @@ Item {
       { pattern: /^.*\s-\s(.+)$/, replacement: "$1" },
     ]
     
-    // Try each cleanup rule
     for (let rule of cleanupRules) {
       let match = rawTitle.match(rule.pattern)
       if (match) {
@@ -28,16 +28,13 @@ Item {
       }
     }
     
-    // If no rules matched, return the original title
     return rawTitle
   }
   
-  // Watch for changes to the active toplevel
   Connections {
     target: Hyprland
     
     function onActiveToplevelChanged() {
-      // This fires when the active window changes
       if (Hyprland.activeToplevel) {
         windowTitleProcess.running = true
       } else {
@@ -67,6 +64,7 @@ Item {
   
   Text {
     font.pixelSize: 14
+    font.bold = true
     color: "#e0e0e0"
     text: root.cachedAppName
   }
