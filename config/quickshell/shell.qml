@@ -34,8 +34,8 @@ Scope {
         spacing: 8
 
         Rectangle {
-          width: 36
-          height: 36
+          width: 30
+          height: 30
           color: "#121212"
 
           Image {
