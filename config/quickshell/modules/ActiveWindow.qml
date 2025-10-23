@@ -6,7 +6,7 @@ import Quickshell.Hyprland
 
 Item {
   id: root
-  implicitHeight: 20
+  implicitHeight: 36
   
   property string cachedAppName: "Desktop"
   
@@ -63,6 +63,7 @@ Item {
   }
   
   Text {
+    anchors.centerIn: parent
     font.pixelSize: 14
     font.bold: true
     color: "#e0e0e0"
