@@ -46,7 +46,6 @@ Scope {
             sourceSize: Qt.size(width, height)
             smooth: true
           }
-
         }
 
         Text {
@@ -56,7 +55,7 @@ Scope {
           font.bold: true
           color: "#e0e0e0"
         }
-        
+
         ActiveWindow {}
 
         Item {
