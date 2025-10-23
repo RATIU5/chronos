@@ -9,6 +9,29 @@ Item {
   
   property string cachedAppName: "Desktop"
   
+  function processTitle(rawTitle) {
+    if (!rawTitle || rawTitle === "") {
+      return "Desktop"
+    }
+    
+    const cleanupRules = [
+      { pattern: /^.*\s-\s(Chromium|Google Chrome)$/i, replacement: "$1" },
+      { pattern: /^.*\s-\s(Mozilla Firefox|Firefox)$/i, replacement: "Firefox" },
+      { pattern: /^.*\s-\s(.+)$/, replacement: "$1" },
+    ]
+    
+    // Try each cleanup rule
+    for (let rule of cleanupRules) {
+      let match = rawTitle.match(rule.pattern)
+      if (match) {
+        return rawTitle.replace(rule.pattern, rule.replacement)
+      }
+    }
+    
+    // If no rules matched, return the original title
+    return rawTitle
+  }
+  
   // Watch for changes to the active toplevel
   Connections {
     target: Hyprland
@@ -30,7 +53,8 @@ Item {
     
     stdout: StdioCollector {
       onStreamFinished: {
-        root.cachedAppName = this.text.trim() || "Desktop"
+        let rawTitle = this.text.trim()
+        root.cachedAppName = root.processTitle(rawTitle)
       }
     }
   }
