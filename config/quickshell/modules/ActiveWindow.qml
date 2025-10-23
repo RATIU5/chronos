@@ -63,7 +63,7 @@ Item {
   }
   
   Text {
-    implicitHeight: parent.height
+    implicitHeight: 30
     anchors.verticalCenter: parent
     font.pixelSize: 14
     font.bold: true
