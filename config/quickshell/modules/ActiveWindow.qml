@@ -1,35 +1,49 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Hyprland
 
 Item {
   id: root
   
-  // Helper function to get app name from desktop entries
-  function getAppName(appId) {
-    if (!appId) return "Desktop2"
+  property string cachedAppName: "Desktop"
+  
+  // Watch for changes to the active toplevel
+  Connections {
+    target: Hyprland
     
-    // Try to find a matching desktop entry
-    var entry = DesktopEntries.byId(appId)
-    if (entry) {
-      return entry.name || appId
+    function onActiveToplevelChanged() {
+      // This fires when the active window changes
+      if (Hyprland.activeToplevel) {
+        windowTitleProcess.running = true
+      } else {
+        root.cachedAppName = "Desktop"
+      }
     }
-    
-    // Fallback: capitalize the appId
-    return appId.charAt(0).toUpperCase() + appId.slice(1)
   }
+  
+  Process {
+    id: windowTitleProcess
+    command: ["bash", "-c", "hyprctl activewindow -j | jq -r '.initialTitle'"]
+    running: false
     
+    stdout: StdioCollector {
+      onStreamFinished: {
+        root.cachedAppName = this.text.trim() || "Desktop"
+      }
+    }
+  }
+  
+  Component.onCompleted: {
+    if (Hyprland.activeToplevel) {
+      windowTitleProcess.running = true
+    }
+  }
+  
   Text {
     font.pixelSize: 14
     color: "#e0e0e0"
-    text: {
-      var toplevel = Hyprland.activeToplevel
-      if (!toplevel) return "Desktop1"
-      
-      // Try appId first, then try looking at the title as a fallback
-      var appId = toplevel.appId
-      return root.getAppName(appId)
-    }
+    text: root.cachedAppName
   }
 }
