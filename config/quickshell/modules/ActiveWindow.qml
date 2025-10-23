@@ -63,7 +63,7 @@ Item {
   }
   
   Text {
-    anchors.centerIn: parent
+    anchors.verticalCenter: parent
     font.pixelSize: 14
     font.bold: true
     color: "#e0e0e0"
