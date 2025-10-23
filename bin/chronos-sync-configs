@@ -26,7 +26,7 @@ if git pull; then
     done
     
     # Copy bashrc
-    cp "$CHRONOS_DIR/default/bashrc" "$HOME/.bashrc"
+    cp "$CHRONOS_PATH/default/bashrc" "$HOME/.bashrc"
     echo -e "${GREEN}✓${NC} Updated ~/.bashrc"
     
     echo ""
