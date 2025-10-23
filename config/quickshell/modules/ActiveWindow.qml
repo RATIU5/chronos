@@ -39,12 +39,5 @@ Item {
         return root.getAppName(appId)
       }
     }
-    
-    Text {
-      Layout.fillWidth: true
-      font.pixelSize: 14
-      color: "#e0e0e0"
-      text: Hyprland.activeToplevel?.title ?? "No active window"
-    }
   }
 }
