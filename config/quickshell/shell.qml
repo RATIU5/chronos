@@ -23,7 +23,7 @@ Scope {
       }
 
       implicitHeight: 36
-      color: "#121212"
+      color: "#6b2828"
 
       RowLayout {
         anchors.fill: parent
