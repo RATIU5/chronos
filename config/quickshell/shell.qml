@@ -36,7 +36,7 @@ Scope {
         Rectangle {
           width: 36
           height: 36
-          color: "#121212"
+          color: "#6b2828"
 
           Image {
             anchors.centerIn: parent
