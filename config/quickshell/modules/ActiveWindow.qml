@@ -19,25 +19,18 @@ Item {
     // Fallback: capitalize the appId
     return appId.charAt(0).toUpperCase() + appId.slice(1)
   }
-  
-  RowLayout {
-    id: rowLayout
     
-    anchors.horizontalCenter: parent.horizontalCenter
-    spacing: 10
-    
-    Text {
-      Layout.fillWidth: true
-      font.pixelSize: 14
-      color: "#e0e0e0"
-      text: {
-        var toplevel = Hyprland.activeToplevel
-        if (!toplevel) return "Desktop"
-        
-        // Try appId first, then try looking at the title as a fallback
-        var appId = toplevel.appId
-        return root.getAppName(appId)
-      }
+  Text {
+    Layout.fillWidth: true
+    font.pixelSize: 14
+    color: "#e0e0e0"
+    text: {
+      var toplevel = Hyprland.activeToplevel
+      if (!toplevel) return "Desktop"
+      
+      // Try appId first, then try looking at the title as a fallback
+      var appId = toplevel.appId
+      return root.getAppName(appId)
     }
   }
 }
