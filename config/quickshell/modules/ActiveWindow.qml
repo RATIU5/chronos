@@ -6,7 +6,6 @@ import Quickshell.Hyprland
 
 Item {
   id: root
-  implicitHeight: 36
   
   property string cachedAppName: "Desktop"
   
