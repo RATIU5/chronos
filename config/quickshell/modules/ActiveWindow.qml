@@ -8,7 +8,6 @@ Item {
   id: root
   anchors.verticalCenter: parent.verticalCenter
   implicitHeight: 16
-  
   property string cachedAppName: "Desktop"
   
   function processTitle(rawTitle) {
@@ -66,6 +65,7 @@ Item {
   Text {
     font.pixelSize: 14
     font.bold: true
+    topPadding: -2
     color: "#e0e0e0"
     text: root.cachedAppName
   }
